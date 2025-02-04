@@ -1,32 +1,23 @@
 from datetime import datetime
-from typing import Dict, Any, Optional
-from pydantic import BaseModel
 from enum import Enum
+
+from uap_backend.base.schemas import BaseUserBackendModel
 
 
 class ApplicationStatus(str, Enum):
-    PENDING = "pending"
-    REVIEW = "review"
-    APPROVED = "approved"
-    REJECTED = "rejected"
+    ACCEPTED = "ACCEPTED"
+    DECLINED = "DECLINED"
+    REVIEW = "REVIEW"
+    EDITING = "EDITING"
+    NOT_SENT = "NOT_SENT"
 
 
-class ApplicationBase(BaseModel):
-    user_id: int
-    form_data: Dict[str, Any]
-    status: ApplicationStatus = ApplicationStatus.PENDING
-
-
-class ApplicationCreate(ApplicationBase):
-    pass
-
-
-class ApplicationUpdate(BaseModel):
-    form_data: Optional[Dict[str, Any]] = None
-    status: Optional[ApplicationStatus] = None
-
-
-class Application(ApplicationBase):
-    id: int
-    created_at: datetime
-    updated_at: datetime
+class ApplicationForm(BaseUserBackendModel):
+    status: ApplicationStatus = ApplicationStatus.NOT_SENT
+    birth_date: datetime | None
+    launcher: str | None
+    server_source: str | None
+    private_server_experience: str | None
+    useful_skills: str | None
+    conflict_reaction: str | None
+    quiz_answer: str | None
