@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = True
-        extra=True
+        extra="allow"
 
 
 settings = Settings()
