@@ -12,9 +12,9 @@ class Settings(BaseSettings):
     SERVICE_PORT: int = 8000
 
     # Authentication
-    AUTH_SECRET_KEY: str
+    BACKEND_API_KEY: str
     CALLBACK_SECRET: str
-    
+
     MAX_RETRIES: int = 3
     RETRY_DELAY: int = 5
 
