@@ -31,17 +31,14 @@ class WebhookManager:
                 payload = payload.model_dump()
             
             handler = handler_info["handler"]
-            handler_self = handler.__self__
             
             if isinstance(data, BothPayloadBaseModel):
                 result = await handler(
-                    handler_self,
                     before=payload['payload']['before'],
                     after=payload['payload']['after']
                 )
             else:
                 result = await handler(
-                    handler_self,
                     payload=payload['payload']
                 )
             
