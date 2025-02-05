@@ -22,3 +22,6 @@ class PayloadBaseModel(BaseModel):
 
 class BothPayloadBaseModel(BaseModel):
     payload: dict[Literal["before", "after"], dict[str, Any]]
+
+
+PayloadModels = PayloadBaseModel | BothPayloadBaseModel

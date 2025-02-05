@@ -1,6 +1,8 @@
 from fastapi import FastAPI, Request, HTTPException
 from typing import Dict, Any
 import logging
+
+from uap_backend.base.schemas import PayloadModels
 from .registry import WebhookRegistry
 
 logger = logging.getLogger(__name__)
@@ -11,9 +13,9 @@ class WebhookManager:
         self.app = app
         self.registry = WebhookRegistry()
 
-        @app.post("/webhook/{event_type}")
-        async def webhook_handler(event_type: str, request: Request) -> Dict[str, Any]:
-            return await self.handle_webhook(event_type, request)
+        @app.post("/webhook")
+        async def webhook_handler(data: PayloadModels, request: Request) -> Dict[str, Any]:
+            return await self.handle_webhook(data.scope, request)
 
     async def handle_webhook(self, event_type: str, request: Request) -> Dict[str, Any]:
         handler_info = self.registry.get_handler(event_type)
