@@ -33,6 +33,7 @@ class WebhookManager:
                 payload = handler_info["model"](**payload)
                 payload = payload.model_dump()
 
+            print(type(payload))
             result = await handler_info["handler"](payload)
 
             return {
