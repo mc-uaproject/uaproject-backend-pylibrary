@@ -25,6 +25,20 @@ class WebhookRegistry:
         return decorator
 
     @classmethod
+    def bind_handlers(cls, instance):
+        for event_type, handler_info in cls._handlers.items():
+            if isinstance(handler_info["handler"], staticmethod):
+                continue
+
+            handler_info["handler"] = getattr(
+                instance, handler_info["handler"].__name__, None
+            )
+            if handler_info["handler"] is None:
+                raise ValueError(
+                    f"Cannot bind handler for {event_type}, method not found in {instance}"
+                )
+
+    @classmethod
     def get_handler(cls, event_type: str) -> Optional[Dict[str, Any]]:
         return cls._handlers.get(event_type)
 
