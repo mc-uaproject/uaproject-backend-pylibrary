@@ -18,22 +18,17 @@ class WebhookRegistry:
     def register_handler(
         cls,
         event_type: str,
-        validation_model: Optional[Type[BaseModel]] = None,
-        description: str = "",
-    ) -> Callable:
-        def decorator(func: Callable) -> Callable:
+        validation_model: Optional[Type[BaseModel]] = None
+    ):
+        def decorator(func: Callable):
             @wraps(func)
-            async def wrapper(*args, **kwargs) -> Any:
-                return await func(*args, **kwargs)
+            async def wrapper(self, *args, **kwargs):
+                return await func(self, *args, **kwargs)
             
             cls._handlers[event_type] = {
                 "handler": wrapper,
-                "model": validation_model,
-                "description": description,
-                "module": func.__module__,
+                "model": validation_model
             }
-            
-            logger.info(f"Registered webhook handler for {event_type} from {func.__module__}")
             return wrapper
         return decorator
     
