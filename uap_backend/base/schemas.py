@@ -4,10 +4,14 @@ from pydantic import BaseModel
 
 PayloadBoth = Literal["before", "after"]
 
-class BaseBackendModel(BaseModel):
-    id: int
+
+class DatetimeMixin(BaseModel):
     created_at: datetime
     updated_at: datetime
+
+
+class BaseBackendModel(BaseModel):
+    id: int
 
 
 class BaseUserBackendModel(BaseBackendModel):
