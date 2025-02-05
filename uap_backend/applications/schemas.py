@@ -1,7 +1,11 @@
 from datetime import datetime
 from enum import Enum
 
-from uap_backend.base.schemas import BaseUserBackendModel
+from uap_backend.base.schemas import (
+    BaseUserBackendModel,
+    BothPayloadBaseModel,
+    PayloadBoth,
+)
 
 
 class ApplicationStatus(str, Enum):
@@ -21,3 +25,11 @@ class ApplicationForm(BaseUserBackendModel):
     useful_skills: str | None
     conflict_reaction: str | None
     quiz_answer: str | None
+
+
+class ApplicationStatusPayload(BaseUserBackendModel):
+    status: ApplicationStatus
+
+
+class ApplicationStatusPayloadFull(BothPayloadBaseModel):
+    payload: dict[PayloadBoth, ApplicationStatusPayload]
