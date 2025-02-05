@@ -16,11 +16,11 @@ class WebhookManager:
             return await self.handle_webhook(data, request)
     
     async def handle_webhook(self, data: PayloadModels, request: Request) -> Dict[str, Any]:
-        handler_info = self.registry.get_handler(data.action)
+        handler_info = self.registry.get_handler(data.scope)
         if not handler_info:
             raise HTTPException(
                 status_code=404,
-                detail=f"No handler registered for event type: {data.action}",
+                detail=f"No handler registered for event type: {data.scope}",
             )
         
         try:
@@ -40,10 +40,10 @@ class WebhookManager:
             
             return {
                 "success": True,
-                "message": f"Successfully processed {data.action} event",
+                "message": f"Successfully processed {data.scope} event",
                 "data": result,
             }
             
         except Exception as e:
-            logger.error(f"Error processing webhook {data.action}: {str(e)}")
+            logger.error(f"Error processing webhook {data.scope}: {str(e)}")
             raise HTTPException(status_code=400, detail=str(e))
