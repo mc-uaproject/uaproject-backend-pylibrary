@@ -45,6 +45,7 @@ class RolePayload(BaseBackendModel):
 
 
 class UserPayload(BaseBackendModel):
+    discord_id: str
     minecraft_nickname: str | None
     is_superuser: bool | None
 
