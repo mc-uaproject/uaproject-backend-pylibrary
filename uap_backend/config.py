@@ -5,11 +5,9 @@ class Settings(BaseSettings):
     # API Settings
     API_VERSION: str = "v1"
     API_PREFIX: str = f"/api/{API_VERSION}"
+    API_BASE_URL: str = "https://api.uaproject.xyz"
+    API_FULL_URL: str = f"https://api.uaproject.xyz{API_PREFIX}"
     DEBUG: bool = False
-
-    # Service URLs
-    SERVICE_HOST: str = "http://localhost"
-    SERVICE_PORT: int = 8000
 
     # Authentication
     BACKEND_API_KEY: str
