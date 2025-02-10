@@ -1,40 +1,12 @@
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Optional
 from uuid import UUID
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, model_validator
 from uap_backend.base.schemas import BaseBackendModel
 
 
-class DiscordUserResponse(BaseModel):
-    id: int
-    username: str
-    discriminator: str
-    avatar: Optional[str] = None
-    email: Optional[str] = None
-    verified: bool
-    locale: str
-    flags: int
-    premium_type: Optional[int] = None
-    public_flags: int
-
-
-class AccessTokenResponse(BaseModel):
-    access_token: str
-    token_type: str = "Bearer"
-    expires_in: int = Field(default=604800)
-    refresh_token: Optional[str] = None
-    scope: str = "identify email"
-
-
-class RedirectUrlResponse(BaseModel):
-    url: str
-    state: Optional[str] = None
-
-
-class UserTokenResponse(BaseModel):
+class TokenResponse(BaseModel):
     token: UUID
-    created_at: datetime = Field(default_factory=datetime.now(timezone.utc))
-    expires_at: Optional[datetime] = None
 
 
 class RolePayload(BaseBackendModel):
@@ -50,3 +22,44 @@ class UserPayload(BaseBackendModel):
     is_superuser: bool | None
 
     roles: list
+
+
+class UserUpdate(BaseModel):
+    minecraft_nickname: Optional[str] = None
+    discord_id: Optional[int] = None
+    is_superuser: Optional[bool] = None
+
+    @model_validator(mode="before")
+    def validate_minecraft_nickname(cls, values):
+        nickname = values.get("minecraft_nickname")
+        if nickname is not None:
+            if not 3 <= len(nickname) <= 16:
+                raise ValueError(
+                    "Minecraft nickname must be between 3 and 16 characters."
+                )
+            if not nickname.isalnum() and "_" not in nickname:
+                raise ValueError(
+                    "Minecraft nickname can only contain letters, numbers, and underscores."
+                )
+        return values
+
+
+class UserResponse(BaseModel):
+    id: int
+    discord_id: Optional[int] = None
+    minecraft_nickname: Optional[str] = None
+    is_superuser: bool = False
+    created_at: datetime
+    updated_at: datetime
+    token: Optional[TokenResponse] = None
+
+    class Config:
+        from_attributes = True
+
+
+class UserFilterParams(BaseModel):
+    user_id: Optional[int] = None
+    discord_id: Optional[int] = None
+    minecraft_nickname: Optional[str] = None
+    is_superuser: Optional[bool] = None
+    role_name: Optional[str] = None

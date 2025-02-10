@@ -1,103 +1,90 @@
-from typing import List, Optional
+from typing import Optional, List, Dict, Any
+from uap_backend.base.crud import BaseCRUD
 from .schemas import (
     ApplicationCreate,
-    ApplicationUpdate,
     ApplicationResponse,
     ApplicationStatus,
+    ApplicationUpdate,
+    ApplicationFilterParams,
 )
-from uap_backend.base.crud import BaseCRUD
 
+class ApplicationCRUDService(BaseCRUD[ApplicationResponse]):
+    response_model = ApplicationResponse
 
-class ApplicationsCrudService(BaseCRUD):
-    def __init__(self):
-        super().__init__()
-        self.base_url = "/applications"
+    async def get_user_application(
+        self, 
+        user_id: int, 
+        params: Optional[Dict[str, Any]] = None
+    ) -> Optional[ApplicationResponse]:
+        """Get application for a specific user"""
+        params = params or {}
+        params['user_id'] = user_id
+        try:
+            return await self.get(f"/applications/users/{user_id}", params=params)
+        except Exception:
+            return None
 
-    async def create_application(
-        self, application: ApplicationCreate
+    async def create(
+        self, 
+        data: ApplicationCreate, 
+        user_id: Optional[int] = None
     ) -> ApplicationResponse:
         """Create a new application"""
-        data = await self._request(
-            "POST", self.base_url, json=application.model_dump(exclude_unset=True)
-        )
-        return ApplicationResponse.model_validate(data)
+        return await self.post("/applications", data=data)
 
-    async def get_current_user_application(self) -> ApplicationResponse:
-        """Get the current user's application"""
-        data = await self._request("GET", f"{self.base_url}/me")
-        return ApplicationResponse.model_validate(data)
-
-    async def get_application_by_id(self, application_id: int) -> ApplicationResponse:
-        """Get an application by its ID"""
-        data = await self._request("GET", f"{self.base_url}/{application_id}")
-        return ApplicationResponse.model_validate(data)
-
-    async def get_application_by_user_id(self, user_id: int) -> ApplicationResponse:
-        """Get an application by user ID"""
-        data = await self._request("GET", f"{self.base_url}/by-user/{user_id}")
-        return ApplicationResponse.model_validate(data)
-
-    async def get_applications(
-        self,
-        skip: int = 0,
-        limit: int = 100,
-        sort_by: str = "created_at",
-        order: str = "desc",
-        status: Optional[ApplicationStatus] = None,
-        user_id: Optional[int] = None,
-    ) -> List[ApplicationResponse]:
-        """
-        Get a list of applications with optional filtering and sorting
-
-        :param skip: Number of records to skip
-        :param limit: Maximum number of records to return
-        :param sort_by: Field to sort by (created_at, status, user_id)
-        :param order: Sort order (asc or desc)
-        :param status: Filter by application status
-        :param user_id: Filter by specific user ID
-        """
-        params = {"skip": skip, "limit": limit, "sort_by": sort_by, "order": order}
-
-        if status is not None:
-            params["status"] = status
-        if user_id is not None:
-            params["user_id"] = user_id
-
-        data = await self._request("GET", self.base_url, params=params)
-        return [ApplicationResponse.model_validate(app) for app in data]
-
-    async def update_application(
-        self, application_id: int, application_update: ApplicationUpdate
+    async def update(
+        self, 
+        application_id: int, 
+        data: ApplicationUpdate, 
+        user_id: Optional[int] = None
     ) -> ApplicationResponse:
         """Update an existing application"""
-        data = await self._request(
-            "PATCH",
-            f"{self.base_url}/{application_id}",
-            json=application_update.model_dump(exclude_unset=True),
-        )
-        return ApplicationResponse.model_validate(data)
+        return await self.patch(f"/applications/{application_id}", data=data)
 
-    async def delete_application(self, application_id: int) -> dict:
-        """Delete an application"""
-        return await self._request("DELETE", f"{self.base_url}/{application_id}")
+    async def get_list(
+        self, 
+        filters: Optional[ApplicationFilterParams] = None, 
+        skip: int = 0, 
+        limit: int = 50,
+        sort_by: str = 'created_at',
+        order: str = 'desc'
+    ) -> List[ApplicationResponse]:
+        """Get list of applications with filtering and pagination"""
+        params = {
+            'skip': skip, 
+            'limit': limit, 
+            'sort_by': sort_by, 
+            'order': order,
+            **(filters.model_dump(exclude_none=True) if filters else {})
+        }
+        return await self.get("/applications", params=params, is_list=True)
 
-    async def update_application_status(
-        self, application_id: int, status: ApplicationStatus
+    async def update_status(
+        self, 
+        application_id: int, 
+        status: ApplicationStatus, 
+        user_id: Optional[int] = None
     ) -> ApplicationResponse:
-        """Update the status of an application"""
-        data = await self._request(
-            "POST", f"{self.base_url}/{application_id}/status/{status}"
-        )
-        return ApplicationResponse.model_validate(data)
+        """Update application status"""
+        return await self.post(f"/applications/{application_id}/status/{status.value}")
 
-    async def check_field_editable(self, application_id: int, field_name: str) -> bool:
+    async def check_field_editable(
+        self, 
+        application_id: int, 
+        field_name: str, 
+        user_id: Optional[int] = None
+    ) -> bool:
         """Check if a specific field is editable"""
-        data = await self._request(
-            "GET", f"{self.base_url}/{application_id}/field/{field_name}/editable"
-        )
-        return data.get("editable", False)
+        response = await self.get(f"/applications/{application_id}/field/{field_name}/editable")
+        return response.get('editable', False)
 
-    async def get_editable_fields(self, application_id: int) -> List[str]:
-        """Get all editable fields for a specific application"""
-        data = await self._request("GET", f"{self.base_url}/{application_id}/editables")
-        return data.get("editable_fields", [])
+    async def get_editable_fields(
+        self, 
+        application_id: int, 
+        user_id: Optional[int] = None
+    ) -> List[str]:
+        """Get list of editable fields for an application"""
+        response = await self.get(f"/applications/{application_id}/editables")
+        return response.get('editable_fields', [])
+
+ApplicationCRUDServiceInit = ApplicationCRUDService()

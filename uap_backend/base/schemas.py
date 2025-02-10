@@ -1,26 +1,27 @@
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 from typing import Any, Literal
 from pydantic import BaseModel
 
 PayloadBoth = Literal["before", "after"]
 
 
-class SortOrder(str, Enum):
+class SortOrder(StrEnum):
     ASC = "asc"
     DESC = "desc"
 
 
-class UserSort(str, Enum):
-    ROLE = "role"
-    NICKNAME = "nickname"
-    DISCORD_ID = "discord_id"
-
-
-class RoleSortField(str, Enum):
-    NAME = "name"
-    WEIGHT = "weight"
+class DefaultSort(StrEnum):
+    ID = "id"
     CREATED_AT = "created_at"
+    UPDATED_AT = "updated_at"
+
+
+class UserDefaultSort(StrEnum):
+    ID = DefaultSort.ID
+    CREATED_AT = DefaultSort.CREATED_AT
+    UPDATED_AT = DefaultSort.UPDATED_AT
+    USER_ID = "user_id"
 
 
 class DatetimeMixin(BaseModel):

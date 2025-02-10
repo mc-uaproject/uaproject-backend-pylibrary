@@ -6,7 +6,6 @@ class Settings(BaseSettings):
     API_VERSION: str = "v1"
     API_PREFIX: str = f"/api/{API_VERSION}"
     API_BASE_URL: str = "https://api.uaproject.xyz"
-    API_FULL_URL: str = f"https://api.uaproject.xyz{API_PREFIX}"
     DEBUG: bool = False
 
     # Authentication

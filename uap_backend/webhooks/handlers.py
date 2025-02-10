@@ -11,8 +11,10 @@ class WebhookManager:
     def __init__(self, app: FastAPI):
         self.app = app
         self.registry = WebhookRegistry()
+        self._setup_webhook_handler()
 
-        @app.post("/webhook")
+    def _setup_webhook_handler(self):
+        @self.app.post("/webhook")
         async def webhook_handler(
             data: PayloadModels, request: Request
         ) -> Dict[str, Any]:
@@ -22,6 +24,7 @@ class WebhookManager:
         self, data: PayloadModels, request: Request
     ) -> Dict[str, Any]:
         handler_info = self.registry.get_handler(data.scope)
+
         if not handler_info:
             raise HTTPException(
                 status_code=404,
@@ -31,21 +34,19 @@ class WebhookManager:
         try:
             payload = await request.json()
 
-            if handler_info["model"]:
-                payload = handler_info["model"](**payload)
+            if handler_info.model:
+                payload = handler_info.model(**payload)
                 payload = payload.model_dump()
-
-            handler = handler_info["handler"]
 
             if isinstance(payload.get("payload"), dict) and all(
                 k in payload["payload"] for k in ("before", "after")
             ):
-                result = await handler(
+                result = await handler_info.handler(
                     before=payload["payload"]["before"],
                     after=payload["payload"]["after"],
                 )
             else:
-                result = await handler(payload=payload["payload"])
+                result = await handler_info.handler(payload=payload["payload"])
 
             return {
                 "success": True,
@@ -54,5 +55,5 @@ class WebhookManager:
             }
 
         except Exception as e:
-            logger.error(f"Error processing webhook {data.scope}: {str(e)}")
+            logging.error(f"Error processing webhook {data.scope}: {str(e)}")
             raise HTTPException(status_code=400, detail=str(e))
