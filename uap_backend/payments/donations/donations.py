@@ -1,28 +1,36 @@
-from pydantic import BaseModel
 from datetime import datetime
+from decimal import Decimal
 from typing import Optional
-from uap_backend.base import BaseBackendModel
+from pydantic import BaseModel
 
 
 class DonationCreate(BaseModel):
-    amount: float
-    currency: str
-    donor_name: str
-    donor_email: str
-    message: Optional[str] = None
-    source: str
-    user_id: int
-    balance_id: int
-    donatello_transaction_id: Optional[str] = None
+    amount: Decimal
+    user_id: Optional[int] = None
+    currency: str = "UAH"
+    source: Optional[str] = None
 
 
-class DonationResponse(BaseBackendModel):
-    amount: str
+class DonationResponse(BaseModel):
+    id: int
+    user_id: Optional[int]
+    amount: Decimal
     currency: str
-    donor_name: str
-    donor_email: str
-    message: Optional[str]
-    source: str
-    user_id: int
-    balance_id: int
-    donatello_transaction_id: Optional[str]
+    source: Optional[str]
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class DonationUpdate(BaseModel):
+    amount: Optional[Decimal] = None
+    currency: Optional[str] = None
+    source: Optional[str] = None
+
+
+class DonationFilterParams(BaseModel):
+    user_id: Optional[int] = None
+    min_amount: Optional[Decimal] = None
+    max_amount: Optional[Decimal] = None
+    currency: Optional[str] = None
