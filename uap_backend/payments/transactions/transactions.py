@@ -1,18 +1,33 @@
-from pydantic import BaseModel
+from datetime import datetime
+from decimal import Decimal
 from typing import Optional
-from uap_backend.base import BaseBackendModel
+from pydantic import BaseModel
 
 
-class TransactionResponse(BaseBackendModel):
-    amount: str
+class TransactionResponse(BaseModel):
+    id: int
+    user_id: Optional[int]
+    amount: Decimal
     currency: str
-    sender_id: Optional[int]
-    recipient_id: Optional[int]
-    description: Optional[str]
+    type: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
 
 
-class DepositTransaction(BaseModel):
-    amount: float
-    currency: str = "UAH"
-    balance_id: Optional[int]
-    description: Optional[str]
+class TransactionCreate(BaseModel):
+    amount: Decimal
+    currency: str
+    type: str
+    user_id: Optional[int] = None
+
+
+class TransactionFilterParams(BaseModel):
+    user_id: Optional[int] = None
+    type: Optional[str] = None
+    min_amount: Optional[Decimal] = None
+    max_amount: Optional[Decimal] = None
+    start_date: Optional[datetime] = None
+    end_date: Optional[datetime] = None
+    currency: Optional[str] = None
