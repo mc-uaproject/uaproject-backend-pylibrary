@@ -1,18 +1,28 @@
-from pydantic import BaseModel
+from datetime import datetime
+from decimal import Decimal
 from typing import Optional
-from uap_backend.base import BaseBackendModel
-
-
-class BalanceCreate(BaseModel):
-    user_id: int
-    currency: str
-
-
-class BalanceResponse(BaseBackendModel):
-    user_id: int
-    currency: str
-    amount: float
+from uuid import UUID
+from pydantic import BaseModel
 
 
 class BalanceUpdate(BaseModel):
-    amount: float
+    amount: Optional[Decimal] = None
+
+
+class BalanceResponse(BaseModel):
+    id: int
+    user_id: int
+    identifier: UUID
+    amount: Decimal
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+        json_encoders = {UUID: str}
+
+
+class BalanceFilterParams(BaseModel):
+    user_id: Optional[int] = None
+    min_amount: Optional[Decimal] = None
+    max_amount: Optional[Decimal] = None
