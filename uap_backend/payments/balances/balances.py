@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional
-from .base import BaseBackendModel
+from uap_backend.base import BaseBackendModel
 
 
 class BalanceResponse(BaseBackendModel):

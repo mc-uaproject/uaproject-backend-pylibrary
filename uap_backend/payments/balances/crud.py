@@ -2,7 +2,7 @@ from typing import Any, Dict, Optional
 import aiohttp
 
 from uap_backend.config import settings
-from ..exceptions import ServiceError
+from uap_backend.exceptions import ServiceError
 
 
 class BaseCRUD:

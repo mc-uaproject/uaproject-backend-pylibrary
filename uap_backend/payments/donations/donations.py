@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from datetime import datetime
 from typing import Optional
-from .base import BaseBackendModel
+from uap_backend.base import BaseBackendModel
 
 
 class DonationCreate(BaseModel):
