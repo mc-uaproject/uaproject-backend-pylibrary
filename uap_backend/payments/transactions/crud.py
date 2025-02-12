@@ -1,41 +1,85 @@
-from typing import Any, Dict, Optional
-import aiohttp
+from typing import Optional, List, Dict, Any
+from uap_backend.base.crud import BaseCRUD
+from uap_backend.payments.transactions.schemas import (
+    TransactionResponse,
+    TransactionFilterParams,
+    TransactionType,
+    DepositTransaction,
+    WithdrawalTransaction,
+    TransferTransaction,
+    SystemDepositTransaction,
+    RefundTransaction,
+    AdjustmentTransaction,
+)
 
-from uap_backend.config import settings
-from uap_backend.exceptions import ServiceError
 
+class TransactionCRUDService(BaseCRUD[TransactionResponse]):
+    response_model = TransactionResponse
 
-class BaseCRUD:
-    def __init__(self):
-        self._session: Optional[aiohttp.ClientSession] = None
+    async def list_transactions(
+        self,
+        filters: Optional[TransactionFilterParams] = None,
+        skip: int = 0,
+        limit: int = 50,
+        sort_by: str = "created_at",
+        order: str = "desc",
+    ) -> List[TransactionResponse]:
+        """Get list of transactions with filtering and pagination"""
+        params = {
+            "skip": skip,
+            "limit": limit,
+            "sort_by": sort_by,
+            "order": order,
+            **(filters.model_dump(exclude_none=True) if filters else {}),
+        }
+        return await self.get("/transactions", params=params, is_list=True)
 
-    async def get_session(self) -> aiohttp.ClientSession:
-        if self._session is None or self._session.closed:
-            self._session = aiohttp.ClientSession(
-                headers={
-                    "Content-Type": "application/json",
-                    "Authorization": f"Bearer {settings.BACKEND_API_KEY}",
-                }
-            )
-        return self._session
-
-    async def close(self) -> None:
-        if self._session and not self._session.closed:
-            await self._session.close()
-
-    async def _request(
-        self, method: str, endpoint: str, **kwargs: Any
+    async def get_transaction_statistics(
+        self, transaction_type: Optional[TransactionType] = None
     ) -> Dict[str, Any]:
-        session = await self.get_session()
-        try:
-            async with session.request(
-                method, settings.API_FULL_URL + endpoint, **kwargs
-            ) as response:
-                if response.status >= 400:
-                    raise ServiceError(
-                        f"Service request failed: {response.status}",
-                        status_code=response.status,
-                    )
-                return await response.json()
-        except aiohttp.ClientError as e:
-            raise ServiceError(f"Service request failed: {str(e)}")
+        """Get transaction statistics"""
+        params = {"transaction_type": transaction_type} if transaction_type else {}
+        return await self.get("/transactions/statistics", params=params)
+
+    async def get_transaction_details(self, transaction_id: int) -> TransactionResponse:
+        """Get details of a specific transaction"""
+        return await self.get(f"/transactions/details/{transaction_id}")
+
+    async def get_transaction_service_details(
+        self, transaction_id: int
+    ) -> Dict[str, Any]:
+        """Get service details for a specific transaction"""
+        return await self.get(f"/transactions/details/{transaction_id}/service")
+
+    async def create_deposit(self, data: DepositTransaction) -> TransactionResponse:
+        """Create a deposit transaction"""
+        return await self.post("/transactions/deposit", data=data)
+
+    async def create_withdrawal(
+        self, data: WithdrawalTransaction
+    ) -> TransactionResponse:
+        """Create a withdrawal transaction"""
+        return await self.post("/transactions/withdrawal", data=data)
+
+    async def create_transfer(self, data: TransferTransaction) -> TransactionResponse:
+        """Create a transfer transaction"""
+        return await self.post("/transactions/transfer", data=data)
+
+    async def create_system_deposit(
+        self, data: SystemDepositTransaction
+    ) -> TransactionResponse:
+        """Create a system deposit transaction (admin only)"""
+        return await self.post("/transactions/system-deposit", data=data)
+
+    async def create_refund(self, data: RefundTransaction) -> TransactionResponse:
+        """Create a refund transaction (admin only)"""
+        return await self.post("/transactions/refund", data=data)
+
+    async def create_adjustment(
+        self, data: AdjustmentTransaction
+    ) -> TransactionResponse:
+        """Create an adjustment transaction (admin only)"""
+        return await self.post("/transactions/adjustment", data=data)
+
+
+TransactionCRUDServiceInit = TransactionCRUDService()

@@ -1,4 +1,3 @@
-# uap_backend/webhooks/crud.py
 from typing import Optional, List, Dict
 from uap_backend.base.crud import BaseCRUD
 from .schemas import (

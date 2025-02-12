@@ -1,4 +1,3 @@
-# uap_backend/applications/schemas.py
 from datetime import datetime
 from enum import StrEnum
 from typing import List, Optional

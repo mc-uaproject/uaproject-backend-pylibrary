@@ -1,41 +1,62 @@
-from typing import Any, Dict, Optional
-import aiohttp
+from typing import Optional, List, Dict
+from uap_backend.base.crud import BaseCRUD
+from uap_backend.payments.balances.schemas import (
+    BalanceFilterParams,
+    BalanceResponse,
+    BalanceUpdate,
+)
 
-from uap_backend.config import settings
-from uap_backend.exceptions import ServiceError
+
+class BalanceCRUDService(BaseCRUD[BalanceResponse]):
+    response_model = BalanceResponse
+
+    async def create_balance(self) -> BalanceResponse:
+        """Create a new balance for the current user"""
+        return await self.post("/balances")
+
+    async def get_balance(self, balance_id: int) -> BalanceResponse:
+        """Get a specific balance by ID"""
+        return await self.get(f"/balances/{balance_id}")
+
+    async def get_balance_by_key(self, identifier: str) -> BalanceResponse:
+        """Get balance by key/identifier"""
+        return await self.get(f"/balances/key/{identifier}")
+
+    async def get_user_balance(self, user_id: int) -> BalanceResponse:
+        """Get balance for a specific user"""
+        return await self.get(f"/balances/users/{user_id}")
+
+    async def get_my_balance(self) -> BalanceResponse:
+        """Get current user's balance"""
+        return await self.get("/balances/users/me")
+
+    async def list_balances(
+        self,
+        filters: Optional[BalanceFilterParams] = None,
+        skip: int = 0,
+        limit: int = 50,
+        sort_by: str = "amount",
+        order: str = "asc",
+    ) -> List[BalanceResponse]:
+        """Get list of balances with filtering and pagination"""
+        params = {
+            "skip": skip,
+            "limit": limit,
+            "sort_by": sort_by,
+            "order": order,
+            **(filters.model_dump(exclude_none=True) if filters else {}),
+        }
+        return await self.get("/balances", params=params, is_list=True)
+
+    async def update_balance(
+        self, balance_id: int, data: BalanceUpdate
+    ) -> BalanceResponse:
+        """Update a balance"""
+        return await self.patch(f"/balances/{balance_id}", data=data)
+
+    async def delete_balance(self, balance_id: int) -> Dict[str, str]:
+        """Delete a balance"""
+        return await self.delete(f"/balances/{balance_id}")
 
 
-class BaseCRUD:
-    def __init__(self):
-        self._session: Optional[aiohttp.ClientSession] = None
-
-    async def get_session(self) -> aiohttp.ClientSession:
-        if self._session is None or self._session.closed:
-            self._session = aiohttp.ClientSession(
-                headers={
-                    "Content-Type": "application/json",
-                    "Authorization": f"Bearer {settings.BACKEND_API_KEY}",
-                }
-            )
-        return self._session
-
-    async def close(self) -> None:
-        if self._session and not self._session.closed:
-            await self._session.close()
-
-    async def _request(
-        self, method: str, endpoint: str, **kwargs: Any
-    ) -> Dict[str, Any]:
-        session = await self.get_session()
-        try:
-            async with session.request(
-                method, settings.API_FULL_URL + endpoint, **kwargs
-            ) as response:
-                if response.status >= 400:
-                    raise ServiceError(
-                        f"Service request failed: {response.status}",
-                        status_code=response.status,
-                    )
-                return await response.json()
-        except aiohttp.ClientError as e:
-            raise ServiceError(f"Service request failed: {str(e)}")
+BalanceCRUDServiceInit = BalanceCRUDService()
