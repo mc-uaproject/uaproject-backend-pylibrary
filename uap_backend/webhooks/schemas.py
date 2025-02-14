@@ -1,7 +1,7 @@
 
 from datetime import datetime
 from enum import StrEnum
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 
 from pydantic import BaseModel, HttpUrl
 
@@ -41,3 +41,8 @@ class WebhookFilterParams(BaseModel):
     status: Optional[WebhookStatus] = None
     min_created_at: Optional[datetime] = None
     max_created_at: Optional[datetime] = None
+
+class WebhookHandlerResponse(BaseModel):
+    success: bool
+    message: str
+    data: Optional[Dict[str, Any]] = None
