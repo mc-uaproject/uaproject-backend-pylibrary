@@ -1,15 +1,17 @@
 from datetime import datetime
 from enum import StrEnum
 from typing import List, Optional
+
 from pydantic import BaseModel, Field, model_validator
+
 from uap_backend.base.schemas import (
     BaseUserBackendModel,
     BothPayloadBaseModel,
     DatetimeMixin,
     PayloadBaseModel,
     PayloadBoth,
+    UserDefaultSort,
 )
-from uap_backend.base.schemas import UserDefaultSort
 
 
 class ApplicationStatus(StrEnum):

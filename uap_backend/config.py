@@ -1,7 +1,7 @@
 from pydantic_settings import BaseSettings
 
 
-class Settings(BaseSettings):
+class UAProjectAPISettings(BaseSettings):
     # API Settings
     API_VERSION: str = "v1"
     API_PREFIX: str = f"/api/{API_VERSION}"
@@ -21,4 +21,4 @@ class Settings(BaseSettings):
         extra="allow"
 
 
-settings = Settings()
+settings = UAProjectAPISettings()

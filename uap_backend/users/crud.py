@@ -1,6 +1,9 @@
-from typing import Optional, List, Dict
+from typing import Dict, List, Optional
+
 from uap_backend.base.crud import BaseCRUD
-from .schemas import UserResponse, UserUpdate, UserFilterParams
+from uap_backend.base.schemas import SortOrder
+
+from .schemas import UserFilterParams, UserResponse, UserSort, UserUpdate
 
 
 class UserCRUDService(BaseCRUD[UserResponse]):
@@ -15,8 +18,8 @@ class UserCRUDService(BaseCRUD[UserResponse]):
         filters: Optional[UserFilterParams] = None,
         skip: int = 0,
         limit: int = 50,
-        sort_by: str = "created_at",
-        order: str = "desc",
+        sort_by: UserSort = UserSort.CREATED_AT,
+        order: SortOrder = SortOrder.DESC,
     ) -> List[UserResponse]:
         """Get list of users with filtering and pagination"""
         params = {

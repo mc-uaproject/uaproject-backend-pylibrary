@@ -1,7 +1,10 @@
-from fastapi import FastAPI, Request, HTTPException
-from typing import Dict, Any
 import logging
+from typing import Any, Dict
+
+from fastapi import FastAPI, HTTPException, Request
+
 from uap_backend.base.schemas import PayloadModels
+
 from .registry import WebhookRegistry
 
 logger = logging.getLogger(__name__)

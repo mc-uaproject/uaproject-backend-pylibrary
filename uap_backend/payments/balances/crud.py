@@ -1,4 +1,5 @@
-from typing import Optional, List, Dict
+from typing import Dict, List, Optional
+
 from uap_backend.base.crud import BaseCRUD
 from uap_backend.payments.balances.schemas import (
     BalanceFilterParams,

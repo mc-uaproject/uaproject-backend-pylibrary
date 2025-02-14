@@ -1,4 +1,5 @@
-from typing import Dict, Any, Callable, Type, Optional, TypeVar, Generic, Coroutine
+from typing import Any, Callable, Coroutine, Dict, Generic, Optional, Type, TypeVar
+
 from pydantic import BaseModel
 
 T = TypeVar('T', bound=BaseModel)
@@ -7,8 +8,13 @@ class PayloadModels(BaseModel):
     scope: str
 
 class HandlerInfo(Generic[T]):
-    handler: Callable[[T], Coroutine[Any, Any, Dict[str, Any]]]
-    model: Optional[Type[T]] = None
+    def __init__(
+        self,
+        handler: Callable[[T], Coroutine[Any, Any, Dict[str, Any]]],
+        model: Optional[Type[T]] = None
+    ):
+        self.handler = handler
+        self.model = model
 
 class WebhookRegistry:
     _instance: Optional['WebhookRegistry'] = None
@@ -21,13 +27,13 @@ class WebhookRegistry:
 
     @classmethod
     def register_handler(
-        cls, 
-        event_type: str, 
+        cls,
+        event_type: str,
         validation_model: Optional[Type[T]] = None
     ):
         def decorator(func: Callable[[T], Coroutine[Any, Any, Dict[str, Any]]]):
             cls._handlers[event_type] = HandlerInfo(
-                handler=func, 
+                handler=func,
                 model=validation_model
             )
             return func
@@ -38,8 +44,8 @@ class WebhookRegistry:
         for event_type, handler_info in cls._handlers.items():
             if not isinstance(handler_info.handler, staticmethod):
                 bound_handler = getattr(
-                    instance, 
-                    handler_info.handler.__name__, 
+                    instance,
+                    handler_info.handler.__name__,
                     None
                 )
                 if bound_handler is None:

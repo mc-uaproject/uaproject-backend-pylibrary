@@ -1,8 +1,11 @@
 from datetime import datetime
+from enum import StrEnum
 from typing import Optional
 from uuid import UUID
+
 from pydantic import BaseModel, model_validator
-from uap_backend.base.schemas import BaseBackendModel
+
+from uap_backend.base.schemas import BaseBackendModel, UserDefaultSort
 
 
 class TokenResponse(BaseModel):
@@ -63,3 +66,12 @@ class UserFilterParams(BaseModel):
     minecraft_nickname: Optional[str] = None
     is_superuser: Optional[bool] = None
     role_name: Optional[str] = None
+
+
+class UserSort(StrEnum):
+    ID = UserDefaultSort.ID
+    CREATED_AT = UserDefaultSort.CREATED_AT
+    UPDATED_AT = UserDefaultSort.UPDATED_AT
+    MINECRAFT_NICKNAME = "minecraft_nickname"
+    DISCORD_ID = "discord_id"
+    ROLE_WEIGHT = "role_weight"

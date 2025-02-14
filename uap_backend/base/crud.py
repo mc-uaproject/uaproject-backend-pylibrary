@@ -1,9 +1,11 @@
-from typing import TypeVar, Optional, Dict, Any, Type, Union, List, Generic
 from types import TracebackType
-from pydantic import BaseModel
+from typing import Any, Dict, Generic, List, Optional, Type, TypeVar, Union
+
 import aiohttp
-from uap_backend.exceptions import APIError
+from pydantic import BaseModel
+
 from uap_backend.config import settings
+from uap_backend.exceptions import APIError
 
 ModelT = TypeVar("ModelT", bound=BaseModel)
 
@@ -12,7 +14,7 @@ class BaseCRUD(Generic[ModelT]):
     response_model: Type[ModelT]
 
     def __init__(self) -> None:
-        self.base_url: str = f"{settings.API_BASE_URL.rstrip('/')}"
+        self.base_url: str = f"{settings.API_BASE_URL.rstrip('/')}{settings.API_PREFIX}"
         self._session: Optional[aiohttp.ClientSession] = None
 
     async def _get_session(self) -> aiohttp.ClientSession:
