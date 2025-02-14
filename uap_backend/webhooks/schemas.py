@@ -1,4 +1,3 @@
-
 from datetime import datetime
 from enum import StrEnum
 from typing import Any, Dict, Optional
@@ -26,6 +25,7 @@ class WebhookCreate(WebhookBase):
 class WebhookUpdate(WebhookBase):
     status: Optional[WebhookStatus] = None
 
+
 class WebhookResponse(WebhookBase):
     id: int
     status: WebhookStatus
@@ -42,7 +42,15 @@ class WebhookFilterParams(BaseModel):
     min_created_at: Optional[datetime] = None
     max_created_at: Optional[datetime] = None
 
+
 class WebhookHandlerResponse(BaseModel):
     success: bool
     message: str
     data: Optional[Dict[str, Any]] = None
+
+    @classmethod
+    def create(cls, success: bool, message: str, data: Any = None) -> "WebhookHandlerResponse":
+        try:
+            return cls(success=success, message=message, data=data)
+        except Exception:
+            return cls(success=success, message=message, data=None)

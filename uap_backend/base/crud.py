@@ -51,7 +51,7 @@ class BaseCRUD(Generic[ModelT]):
         json: Optional[Dict[str, Any]] = None,
         response_model: Optional[Type[ModelT]] = None,
         is_list: bool = False,
-    ) -> Union[ModelT, List[ModelT]]:
+    ) -> Union[ModelT, List[ModelT], None]:
         session = await self._get_session()
         url = f"{self.base_url}{endpoint}"
 
@@ -59,7 +59,13 @@ class BaseCRUD(Generic[ModelT]):
             async with session.request(
                 method=method, url=url, params=params, json=json
             ) as response:
-                if response.status >= 400:
+                if response.status == 404:
+                    if is_list:
+                        return []
+
+                    return None
+
+                elif response.status >= 400:
                     raise APIError(await response.text(), status_code=response.status)
 
                 data = await response.json()
@@ -96,9 +102,7 @@ class BaseCRUD(Generic[ModelT]):
         response_model: Optional[Type[ModelT]] = None,
     ) -> ModelT:
         json_data = data.model_dump(exclude_unset=True) if data else None
-        return await self._request(
-            "POST", endpoint, json=json_data, response_model=response_model
-        )
+        return await self._request("POST", endpoint, json=json_data, response_model=response_model)
 
     async def patch(
         self,
@@ -108,9 +112,7 @@ class BaseCRUD(Generic[ModelT]):
         response_model: Optional[Type[ModelT]] = None,
     ) -> ModelT:
         json_data = data.model_dump(exclude_unset=True) if data else None
-        return await self._request(
-            "PATCH", endpoint, json=json_data, response_model=response_model
-        )
+        return await self._request("PATCH", endpoint, json=json_data, response_model=response_model)
 
     async def delete(
         self,

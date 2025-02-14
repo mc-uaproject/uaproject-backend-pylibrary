@@ -45,6 +45,6 @@ class WebhookManager:
         else:
             result = await handler_info.handler(payload=payload.payload)
 
-        return WebhookHandlerResponse(
+        return WebhookHandlerResponse.create(
             success=True, message=f"Successfully processed {data.scope} event", data=result
         )
