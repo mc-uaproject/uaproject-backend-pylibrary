@@ -16,7 +16,7 @@ class UAProjectAPISettings(BaseSettings):
     RETRY_DELAY: int = 5
 
     class Config:
-        env_file = ".env"
+        env_file = ".env.uap_api"
         case_sensitive = True
         extra="allow"
 
