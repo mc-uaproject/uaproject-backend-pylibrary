@@ -23,8 +23,10 @@ class WebhookManager:
             return await self.handle_webhook(data, request)
 
     async def handle_webhook(self, data: PayloadModels, request: Request) -> WebhookHandlerResponse:
-        handler_info: Optional[HandlerInfo] = self.registry.get_handler(data.scope)
+        print(data)
+        print(type(data))
 
+        handler_info: Optional[HandlerInfo] = self.registry.get_handler(data.scope)
         if not handler_info:
             raise HTTPException(
                 status_code=404, detail=f"No handler registered for event type: {data.scope}"
@@ -33,12 +35,7 @@ class WebhookManager:
         payload_dict = await request.json()
         payload: PayloadModels = handler_info.model(**payload_dict)
 
-        if isinstance(data, BothPayloadBaseModel):
-            if not all(k in payload.payload for k in ("before", "after")):
-                raise ValueError(
-                    "Both 'before' and 'after' fields are required for this payload type"
-                )
-
+        if isinstance(payload, BothPayloadBaseModel):
             result = await handler_info.handler(
                 before=payload.payload["before"], after=payload.payload["after"]
             )
