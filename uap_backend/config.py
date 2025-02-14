@@ -17,8 +17,7 @@ class UAProjectAPISettings(BaseSettings):
 
     class Config:
         env_file = ".env"
-        case_sensitive = True
-        env_prefix = "UAProjectBackend_"
+        env_prefix = "UAPROJECT_BACKEND_"
 
 
 settings = UAProjectAPISettings()

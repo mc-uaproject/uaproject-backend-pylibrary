@@ -54,7 +54,6 @@ class UserResponse(BaseModel):
     is_superuser: bool = False
     created_at: datetime
     updated_at: datetime
-    token: Optional[TokenResponse] = None
 
     class Config:
         from_attributes = True
