@@ -18,7 +18,6 @@ class UAProjectAPISettings(BaseSettings):
     class Config:
         env_file = ".env.uap_api"
         case_sensitive = True
-        extra="allow"
 
 
 settings = UAProjectAPISettings()
