@@ -23,7 +23,6 @@ class WebhookManager:
             return await self.handle_webhook(data, request)
 
     async def handle_webhook(self, data: PayloadModels, request: Request) -> WebhookHandlerResponse:
-
         handler_info: Optional[HandlerInfo] = self.registry.get_handler(data.scope)
         if not handler_info:
             raise HTTPException(
