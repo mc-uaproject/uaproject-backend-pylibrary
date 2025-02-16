@@ -13,6 +13,13 @@ class UserCRUDService(BaseCRUD[UserResponse]):
         """Get details of a specific user"""
         return await self.get(f"/users/details/{user_id}")
 
+    async def get_user_details_by_discord_id(self, user_id: int) -> UserResponse:
+        """Get details of a specific user"""
+
+        users = await UserCRUDService.list_users(UserFilterParams(discord_id=user_id))
+        if users:
+            return users[0]
+
     async def list_users(
         self,
         filters: Optional[UserFilterParams] = None,
