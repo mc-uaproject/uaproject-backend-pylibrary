@@ -33,54 +33,54 @@ class TransactionCRUDService(BaseCRUD[TransactionResponse]):
             "order": order,
             **(filters.model_dump(exclude_none=True) if filters else {}),
         }
-        return await self.get("/transactions", params=params, is_list=True)
+        return await self.get("/payments/transactions", params=params, is_list=True)
 
     async def get_transaction_statistics(
         self, transaction_type: Optional[TransactionType] = None
     ) -> Dict[str, Any]:
         """Get transaction statistics"""
         params = {"transaction_type": transaction_type} if transaction_type else {}
-        return await self.get("/transactions/statistics", params=params)
+        return await self.get("/payments/transactions/statistics", params=params)
 
     async def get_transaction_details(self, transaction_id: int) -> TransactionResponse:
         """Get details of a specific transaction"""
-        return await self.get(f"/transactions/details/{transaction_id}")
+        return await self.get(f"/payments/transactions/details/{transaction_id}")
 
     async def get_transaction_service_details(
         self, transaction_id: int
     ) -> Dict[str, Any]:
         """Get service details for a specific transaction"""
-        return await self.get(f"/transactions/details/{transaction_id}/service")
+        return await self.get(f"/payments/transactions/details/{transaction_id}/service")
 
     async def create_deposit(self, data: DepositTransaction) -> TransactionResponse:
         """Create a deposit transaction"""
-        return await self.post("/transactions/deposit", data=data)
+        return await self.post("/payments/transactions/deposit", data=data)
 
     async def create_withdrawal(
         self, data: WithdrawalTransaction
     ) -> TransactionResponse:
         """Create a withdrawal transaction"""
-        return await self.post("/transactions/withdrawal", data=data)
+        return await self.post("/payments/transactions/withdrawal", data=data)
 
     async def create_transfer(self, data: TransferTransaction) -> TransactionResponse:
         """Create a transfer transaction"""
-        return await self.post("/transactions/transfer", data=data)
+        return await self.post("/payments/transactions/transfer", data=data)
 
     async def create_system_deposit(
         self, data: SystemDepositTransaction
     ) -> TransactionResponse:
         """Create a system deposit transaction (admin only)"""
-        return await self.post("/transactions/system-deposit", data=data)
+        return await self.post("/payments/transactions/system-deposit", data=data)
 
     async def create_refund(self, data: RefundTransaction) -> TransactionResponse:
         """Create a refund transaction (admin only)"""
-        return await self.post("/transactions/refund", data=data)
+        return await self.post("/payments/transactions/refund", data=data)
 
     async def create_adjustment(
         self, data: AdjustmentTransaction
     ) -> TransactionResponse:
         """Create an adjustment transaction (admin only)"""
-        return await self.post("/transactions/adjustment", data=data)
+        return await self.post("/payments/transactions/adjustment", data=data)
 
 
 TransactionCRUDServiceInit = TransactionCRUDService()
