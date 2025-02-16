@@ -16,7 +16,7 @@ class UserCRUDService(BaseCRUD[UserResponse]):
     async def get_user_details_by_discord_id(self, user_id: int) -> UserResponse:
         """Get details of a specific user"""
 
-        users = await UserCRUDService.list_users(UserFilterParams(discord_id=user_id))
+        users = await self.list_users(UserFilterParams(discord_id=user_id))
         if users:
             return users[0]
 
