@@ -5,15 +5,16 @@ from uap_backend.base.schemas import SortOrder
 
 from .schemas import UserFilterParams, UserResponse, UserSort, UserUpdate
 
+__all__ = ["UserCRUDService", "UserCRUDServiceInit"]
 
 class UserCRUDService(BaseCRUD[UserResponse]):
     response_model = UserResponse
 
-    async def get_user_details(self, user_id: int) -> UserResponse:
+    async def get_user_details(self, user_id: int) -> Optional[UserResponse]:
         """Get details of a specific user"""
         return await self.get(f"/users/details/{user_id}")
 
-    async def get_user_details_by_discord_id(self, user_id: int) -> UserResponse:
+    async def get_user_details_by_discord_id(self, user_id: int) -> Optional[UserResponse]:
         """Get details of a specific user"""
 
         users = await self.list_users(UserFilterParams(discord_id=user_id))

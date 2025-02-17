@@ -22,10 +22,7 @@ class ApplicationCRUDService(BaseCRUD[ApplicationResponse]):
         """Get application for a specific user"""
         params = params or {}
         params['user_id'] = user_id
-        try:
-            return await self.get(f"/applications/users/{user_id}", params=params)
-        except Exception:
-            return None
+        return await self.get(f"/applications/users/{user_id}", params=params)
 
     async def create(
         self,
