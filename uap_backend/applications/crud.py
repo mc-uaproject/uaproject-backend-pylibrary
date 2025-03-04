@@ -14,6 +14,12 @@ from .schemas import (
 class ApplicationCRUDService(BaseCRUD[ApplicationResponse]):
     response_model = ApplicationResponse
 
+    async def get_details(
+        self,
+        application_id: int,
+    ):
+        return await self.get(f"/applications/{application_id}")
+
     async def get_user_application(
         self,
         user_id: int,

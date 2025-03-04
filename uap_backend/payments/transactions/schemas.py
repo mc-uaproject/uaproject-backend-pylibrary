@@ -1,11 +1,18 @@
 from datetime import datetime
 from decimal import Decimal
 from enum import StrEnum
-from typing import Optional
+from typing import Any, Dict, Optional
 
 from pydantic import BaseModel, field_validator
 
-from uap_backend.base.schemas import UserDefaultSort
+from uap_backend.base.schemas import (
+    BaseUserBackendModel,
+    BothPayloadBaseModel,
+    DatetimeMixin,
+    PayloadBaseModel,
+    PayloadBoth,
+    UserDefaultSort,
+)
 
 
 class TransactionType(StrEnum):
@@ -21,10 +28,11 @@ class TransactionType(StrEnum):
 
 class TransactionBase(BaseModel):
     amount: Decimal
-    currency: str = "UAH"
-    balance_id: int | None = None
+    recipient_id: int
     type: TransactionType
     description: Optional[str] = None
+    transaction_metadata: Optional[Dict[str, Any]] = None
+    user_id: Optional[int] = None
 
 
 class TransactionFilterParams(BaseModel):
@@ -95,7 +103,6 @@ class WithdrawalTransaction(TransactionBase):
 class SystemDepositTransaction(TransactionBase):
     type: TransactionType = TransactionType.SYSTEM
     user_id: int
-    reference_id: Optional[str] = None
     metadata: Optional[dict] = None
 
 
@@ -110,7 +117,6 @@ class AdjustmentTransaction(TransactionBase):
     type: TransactionType = TransactionType.ADJUSTMENT
     user_id: int
     reason: str
-    reference_id: Optional[str] = None
 
 
 class TransactionUpdate(BaseModel):
@@ -124,15 +130,72 @@ class TransactionUpdate(BaseModel):
 
 class TransactionResponse(TransactionBase):
     id: int
-    user_id: int
-    balance_id: int
-    sender_id: Optional[int]
-    recipient_id: Optional[int]
-    service_id: Optional[int]
-    reference_id: Optional[str]
-    metadata: Optional[dict]
-    created_at: datetime
-    updated_at: datetime
+    recipient_id: int
+    service_id: Optional[int] = None
+    created_at: datetime = datetime.now()
+    updated_at: datetime = datetime.now()
 
     class Config:
         from_attributes = True
+
+
+class TransactionBasePayload(BaseUserBackendModel):
+    """Base payload for transactions"""
+
+    amount: Decimal
+    type: TransactionType
+    description: Optional[str] = None
+
+
+class TransactionCreatedPayload(TransactionBasePayload):
+    """Payload for transaction creation"""
+
+    id: int
+    user_id: int
+    recipient_id: Optional[int] = None
+    service_id: Optional[int] = None
+    transaction_metadata: Optional[Dict[str, Any]] = None
+
+
+class TransactionTypePayload(TransactionBasePayload):
+    """Payload for transaction type updates"""
+
+    id: int
+    user_id: int
+    amount: Decimal
+    type: TransactionType
+    description: Optional[str] = None
+
+
+class TransactionAmountPayload(TransactionBasePayload):
+    """Payload for transaction amount updates"""
+
+    id: int
+    user_id: int
+    amount: Decimal
+    type: TransactionType
+    description: Optional[str] = None
+
+
+class TransactionCreatedPayloadFull(PayloadBaseModel):
+    """Full transaction created payload wrapper"""
+
+    payload: TransactionCreatedPayload
+
+
+class TransactionTypePayloadFull(BothPayloadBaseModel):
+    """Full transaction type payload wrapper"""
+
+    payload: dict[PayloadBoth, TransactionTypePayload]
+
+
+class TransactionAmountPayloadFull(BothPayloadBaseModel):
+    """Full transaction amount payload wrapper"""
+
+    payload: dict[PayloadBoth, TransactionAmountPayload]
+
+
+class TransactionFullMixins(TransactionCreatedPayload, DatetimeMixin):
+    """Mixin combining transaction payload with timestamp"""
+
+    pass

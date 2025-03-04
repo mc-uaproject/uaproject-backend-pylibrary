@@ -47,5 +47,18 @@ class UserCRUDService(BaseCRUD[UserResponse]):
         """Delete a user"""
         return await self.delete(f"/users/{user_id}")
 
+    async def search_users_by_nickname(
+        self,
+        minecraft_nickname: str,
+        limit: int = 50
+    ) -> List[UserResponse]:
+        """Search users by Minecraft nickname"""
+        params = {
+            "minecraft_nickname": minecraft_nickname,
+            "limit": limit,
+            "skip": 0
+        }
+        return await self.get("/users/search", params=params, is_list=True)
+
 
 UserCRUDServiceInit = UserCRUDService()

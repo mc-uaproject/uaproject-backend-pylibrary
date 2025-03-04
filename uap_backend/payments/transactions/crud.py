@@ -1,16 +1,11 @@
-from typing import Any, Dict, List, Optional
+from decimal import Decimal
+from typing import Any, Dict, List, Literal, Optional, overload
 
 from uap_backend.base.crud import BaseCRUD
 from uap_backend.payments.transactions.schemas import (
-    AdjustmentTransaction,
-    DepositTransaction,
-    RefundTransaction,
-    SystemDepositTransaction,
     TransactionFilterParams,
     TransactionResponse,
     TransactionType,
-    TransferTransaction,
-    WithdrawalTransaction,
 )
 
 
@@ -46,41 +41,61 @@ class TransactionCRUDService(BaseCRUD[TransactionResponse]):
         """Get details of a specific transaction"""
         return await self.get(f"/payments/transactions/details/{transaction_id}")
 
-    async def get_transaction_service_details(
-        self, transaction_id: int
-    ) -> Dict[str, Any]:
+    async def get_transaction_service_details(self, transaction_id: int) -> Dict[str, Any]:
         """Get service details for a specific transaction"""
         return await self.get(f"/payments/transactions/details/{transaction_id}/service")
 
-    async def create_deposit(self, data: DepositTransaction) -> TransactionResponse:
-        """Create a deposit transaction"""
-        return await self.post("/payments/transactions/deposit", data=data)
+    @overload
+    async def create_transaction(
+        self,
+        *,
+        amount: Decimal,
+        type: Literal[TransactionType.DEPOSIT],
+        description: Optional[str],
+    ) -> TransactionResponse: ...
 
-    async def create_withdrawal(
-        self, data: WithdrawalTransaction
-    ) -> TransactionResponse:
-        """Create a withdrawal transaction"""
-        return await self.post("/payments/transactions/withdrawal", data=data)
+    @overload
+    async def create_transaction(
+        self,
+        *,
+        amount: Decimal,
+        type: Literal[TransactionType.WITHDRAWAL],
+        description: Optional[str],
+    ) -> TransactionResponse: ...
 
-    async def create_transfer(self, data: TransferTransaction) -> TransactionResponse:
-        """Create a transfer transaction"""
-        return await self.post("/payments/transactions/transfer", data=data)
+    @overload
+    async def create_transaction(
+        self,
+        *,
+        amount: Decimal,
+        type: Literal[TransactionType.TRANSFER],
+        recipient_id: int,
+        description: Optional[str],
+    ) -> TransactionResponse: ...
 
-    async def create_system_deposit(
-        self, data: SystemDepositTransaction
-    ) -> TransactionResponse:
-        """Create a system deposit transaction (admin only)"""
-        return await self.post("/payments/transactions/system-deposit", data=data)
+    @overload
+    async def create_transaction(
+        self,
+        *,
+        amount: Decimal,
+        type: Literal[TransactionType.PURCHASE],
+        service_id: int,
+        description: Optional[str],
+    ) -> TransactionResponse: ...
 
-    async def create_refund(self, data: RefundTransaction) -> TransactionResponse:
-        """Create a refund transaction (admin only)"""
-        return await self.post("/payments/transactions/refund", data=data)
+    @overload
+    async def create_transaction(
+        self,
+        *,
+        amount: Decimal,
+        type: Literal[TransactionType.SYSTEM],
+        recipient_id
+    ):
+        ...
 
-    async def create_adjustment(
-        self, data: AdjustmentTransaction
-    ) -> TransactionResponse:
-        """Create an adjustment transaction (admin only)"""
-        return await self.post("/payments/transactions/adjustment", data=data)
+    async def create_transaction(self, **kwargs: Any) -> TransactionResponse:
+        """Create a transaction with specific parameters."""
+        return await self.post("/payments/transactions", data=kwargs)
 
 
 TransactionCRUDServiceInit = TransactionCRUDService()
