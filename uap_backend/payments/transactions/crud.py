@@ -95,7 +95,7 @@ class TransactionCRUDService(BaseCRUD[TransactionResponse]):
 
     async def create_transaction(self, **kwargs: Any) -> TransactionResponse:
         """Create a transaction with specific parameters."""
-        data = TransactionResponse(**kwargs)
+        data = TransactionResponse(id=0, **kwargs)
 
         return await self.post("/payments/transactions", data=data)
 
