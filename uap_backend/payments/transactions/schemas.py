@@ -63,7 +63,6 @@ class DepositTransaction(TransactionBase):
             raise ValueError("Transaction type must be DEPOSIT")
         return v
 
-
 class TransferTransaction(TransactionBase):
     type: TransactionType = TransactionType.TRANSFER
     recipient_id: int
