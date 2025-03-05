@@ -131,7 +131,7 @@ class MinecraftNicknamePayload(BaseModel):
     """Payload for Minecraft nickname scope"""
     id: int
     discord_id: Optional[int] = None
-    minecraft_nickname: str
+    minecraft_nickname: Optional[str] = None
 
 
 class DiscordIdPayload(BaseModel):
