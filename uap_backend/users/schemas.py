@@ -103,7 +103,6 @@ class UserUpdatedPayload(BaseModel):
     discord_id: Optional[int] = None
     minecraft_nickname: Optional[str] = None
     is_superuser: Optional[bool] = None
-    updated_at: datetime
 
 
 class UserRolesPayload(BaseModel):
@@ -133,7 +132,6 @@ class MinecraftNicknamePayload(BaseModel):
     id: int
     discord_id: Optional[int] = None
     minecraft_nickname: str
-    updated_at: datetime
 
 
 class DiscordIdPayload(BaseModel):
@@ -141,7 +139,6 @@ class DiscordIdPayload(BaseModel):
     id: int
     discord_id: int
     minecraft_nickname: Optional[str] = None
-    updated_at: datetime
 
 
 class MinecraftNicknamePayloadFull(BothPayloadBaseModel):
