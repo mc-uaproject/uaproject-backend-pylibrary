@@ -1,25 +1,28 @@
 from __future__ import annotations
 
+import inspect
+import logging
 from typing import Any, Callable, Coroutine, Dict, Generic, List, Optional, Set, Type, TypeVar
 
 from pydantic import BaseModel
 
 from uap_backend.base.schemas import PayloadModels
-from uap_backend.logger import get_logger
 
 T = TypeVar("T", bound=BaseModel)
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 class HandlerInfo(Generic[T]):
     def __init__(
         self,
         handler: Callable[[T], Coroutine[Any, Any, Dict[str, Any]]],
         model: Optional[Type[T]] = None,
+        class_name: str = None,
     ):
         self.handler = handler
         self.model: PayloadModels = model
         self.handler_name = handler.__name__
         self.bound_instance = None
+        self.defined_in_class = class_name
 
 class WebhookRegistry:
     _instance: Optional["WebhookRegistry"] = None
@@ -33,9 +36,20 @@ class WebhookRegistry:
     @classmethod
     def register_handler(cls, event_type: str, validation_model: Optional[Type[T]] = None):
         def decorator(func: Callable[[T], Coroutine[Any, Any, Dict[str, Any]]]):
+            frame = inspect.currentframe().f_back
+            class_name = None
+            while frame:
+                if 'self' in frame.f_locals and frame.f_code.co_name == func.__name__:
+                    class_name = frame.f_locals['self'].__class__.__name__
+                    break
+                frame = frame.f_back
+
             if event_type not in cls._handlers:
                 cls._handlers[event_type] = []
-            cls._handlers[event_type].append(HandlerInfo(handler=func, model=validation_model))
+
+            cls._handlers[event_type].append(
+                HandlerInfo(handler=func, model=validation_model, class_name=class_name)
+            )
             return func
         return decorator
 
@@ -45,27 +59,26 @@ class WebhookRegistry:
         handler_names_seen: Set[str] = set()
         duplicate_handler_names: Set[str] = set()
         bound_handlers = []
-        unbound_handlers = []
 
         for event_type, handler_infos in cls._handlers.items():
             for handler_info in handler_infos:
-                handler_name = handler_info.handler_name
-                if handler_name in handler_names_seen:
-                    duplicate_handler_names.add(handler_name)
-                handler_names_seen.add(handler_name)
+                if handler_info.defined_in_class == instance_class_name:
+                    handler_name = handler_info.handler_name
+                    if handler_name in handler_names_seen:
+                        duplicate_handler_names.add(handler_name)
+                    handler_names_seen.add(handler_name)
 
         if duplicate_handler_names:
-            logger.warning(f"Duplicate handler names found: {duplicate_handler_names}")
+            logger.warning(f"Duplicate handler names found in {instance_class_name}: {duplicate_handler_names}")
 
         for event_type, handler_infos in cls._handlers.items():
             for handler_info in handler_infos:
-                if not isinstance(handler_info.handler, staticmethod):
+                if handler_info.defined_in_class is None or handler_info.defined_in_class == instance_class_name:
                     handler_name = handler_info.handler_name
                     bound_handler = getattr(instance, handler_name, None)
 
                     if bound_handler is None:
                         logger.warning(f"Cannot bind handler for {event_type}, method {handler_name} not found in {instance}")
-                        unbound_handlers.append((event_type, handler_name))
                     else:
                         if handler_info.bound_instance is not None and handler_info.bound_instance != instance:
                             logger.warning(
@@ -75,17 +88,13 @@ class WebhookRegistry:
 
                         handler_info.handler = bound_handler
                         handler_info.bound_instance = instance
+                        handler_info.defined_in_class = instance_class_name
                         bound_handlers.append((event_type, handler_name))
 
         if bound_handlers:
             logger.info(f"=== Successfully bound handlers for {instance_class_name} ===")
             for event_type, handler_name in bound_handlers:
                 logger.info(f"  ✓ {event_type} -> {instance_class_name}.{handler_name}")
-
-        if unbound_handlers:
-            logger.info(f"=== Failed to bind handlers for {instance_class_name} ===")
-            for event_type, handler_name in unbound_handlers:
-                logger.info(f"  ✗ {event_type} -> {handler_name} (method not found)")
 
     @classmethod
     def get_handlers(cls, event_type: str) -> List[HandlerInfo[Any]]:
