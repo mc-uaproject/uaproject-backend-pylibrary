@@ -1,15 +1,15 @@
 from __future__ import annotations
 
 import inspect
-import logging
 from typing import Any, Callable, Coroutine, Dict, Generic, List, Optional, Set, Type, TypeVar
 
 from pydantic import BaseModel
 
 from uap_backend.base.schemas import PayloadModels
+from uap_backend.logger import get_logger
 
 T = TypeVar("T", bound=BaseModel)
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 class HandlerInfo(Generic[T]):
     def __init__(
