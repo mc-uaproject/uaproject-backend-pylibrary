@@ -36,7 +36,7 @@ class WebhookManager:
             payload: PayloadModels = handler_info.model(**payload_dict)
 
             # try:
-            if True
+            if True:
                 if isinstance(payload, BothPayloadBaseModel):
                     result = await handler_info.handler(
                         before=payload.payload["before"],
