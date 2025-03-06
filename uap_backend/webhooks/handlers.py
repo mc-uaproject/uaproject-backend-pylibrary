@@ -35,7 +35,8 @@ class WebhookManager:
         for handler_info in handler_infos:
             payload: PayloadModels = handler_info.model(**payload_dict)
 
-            try:
+            # try:
+            if True
                 if isinstance(payload, BothPayloadBaseModel):
                     result = await handler_info.handler(
                         before=payload.payload["before"],
@@ -46,8 +47,8 @@ class WebhookManager:
 
                 results.append(result)
 
-            except Exception as e:
-                logger.error(f"Error processing webhook for {data.scope}: {e}")
+            # except Exception as e:
+            #     logger.error(f"Error processing webhook for {data.scope}: {e}")
 
         return WebhookHandlerResponse.create(
             success=True,
