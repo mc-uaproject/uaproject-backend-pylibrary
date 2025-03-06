@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from typing import Any, Callable, Coroutine, Dict, Generic, List, Optional, Type, TypeVar
 
 from pydantic import BaseModel
@@ -7,6 +8,7 @@ from pydantic import BaseModel
 from uap_backend.base.schemas import PayloadModels
 
 T = TypeVar("T", bound=BaseModel)
+logger = logging.getLogger(__name__)
 
 class HandlerInfo(Generic[T]):
     def __init__(
@@ -43,7 +45,7 @@ class WebhookRegistry:
                     bound_handler = getattr(instance, handler_info.handler.__name__, None)
                     if bound_handler is None:
                         # Optionally, you can log a warning instead of raising an error
-                        print(f"Warning: Cannot bind handler for {event_type}, method not found in {instance}")
+                        logger.warn(f"Cannot bind handler for {event_type}, method not found in {instance}")
                     else:
                         handler_info.handler = bound_handler
 
