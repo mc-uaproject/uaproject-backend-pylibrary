@@ -1,9 +1,6 @@
-from typing import Any, Dict, Optional
+from typing import Optional
 
 import aiohttp
-
-from uap_backend.config import settings
-from uap_backend.exceptions import ServiceError
 
 
 class BaseCRUD:

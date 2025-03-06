@@ -1,13 +1,13 @@
-import logging
 
 from fastapi import FastAPI, HTTPException, Request
 
 from uap_backend.base.schemas import BothPayloadBaseModel, PayloadModels
+from uap_backend.logger import get_logger
 from uap_backend.webhooks.schemas import WebhookHandlerResponse
 
 from .registry import WebhookRegistry
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 class WebhookManager:
     def __init__(self, app: FastAPI):
