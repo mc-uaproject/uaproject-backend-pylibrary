@@ -11,6 +11,7 @@ from uap_backend.logger import get_logger
 T = TypeVar("T", bound=BaseModel)
 logger = get_logger(__name__)
 
+
 class HandlerInfo(Generic[T]):
     def __init__(
         self,
@@ -23,6 +24,7 @@ class HandlerInfo(Generic[T]):
         self.handler_name = handler.__name__
         self.bound_instance = None
         self.defined_in_class = class_name
+
 
 class WebhookRegistry:
     _instance: Optional["WebhookRegistry"] = None
@@ -39,8 +41,8 @@ class WebhookRegistry:
             frame = inspect.currentframe().f_back
             class_name = None
             while frame:
-                if 'self' in frame.f_locals and frame.f_code.co_name == func.__name__:
-                    class_name = frame.f_locals['self'].__class__.__name__
+                if "self" in frame.f_locals and frame.f_code.co_name == func.__name__:
+                    class_name = frame.f_locals["self"].__class__.__name__
                     break
                 frame = frame.f_back
 
@@ -51,6 +53,7 @@ class WebhookRegistry:
                 HandlerInfo(handler=func, model=validation_model, class_name=class_name)
             )
             return func
+
         return decorator
 
     @classmethod
@@ -69,18 +72,28 @@ class WebhookRegistry:
                     handler_names_seen.add(handler_name)
 
         if duplicate_handler_names:
-            logger.warning(f"Duplicate handler names found in {instance_class_name}: {duplicate_handler_names}")
+            logger.warning(
+                f"Duplicate handler names found in {instance_class_name}: {duplicate_handler_names}"
+            )
 
         for event_type, handler_infos in cls._handlers.items():
             for handler_info in handler_infos:
-                if handler_info.defined_in_class is None or handler_info.defined_in_class == instance_class_name:
+                if (
+                    handler_info.defined_in_class is None
+                    or handler_info.defined_in_class == instance_class_name
+                ):
                     handler_name = handler_info.handler_name
                     bound_handler = getattr(instance, handler_name, None)
 
                     if bound_handler is None:
-                        logger.warning(f"Cannot bind handler for {event_type}, method {handler_name} not found in {instance}")
+                        logger.warning(
+                            f"Cannot bind handler for {event_type}, method {handler_name} not found in {instance}"
+                        )
                     else:
-                        if handler_info.bound_instance is not None and handler_info.bound_instance != instance:
+                        if (
+                            handler_info.bound_instance is not None
+                            and handler_info.bound_instance != instance
+                        ):
                             logger.warning(
                                 f"Handler {handler_name} for {event_type} already bound to {handler_info.bound_instance.__class__.__name__}, "
                                 f"now binding to {instance_class_name}. This might lead to unexpected behavior."
@@ -90,11 +103,9 @@ class WebhookRegistry:
                         handler_info.bound_instance = instance
                         handler_info.defined_in_class = instance_class_name
                         bound_handlers.append((event_type, handler_name))
-
-        if bound_handlers:
-            logger.info(f"=== Successfully bound handlers for {instance_class_name} ===")
-            for event_type, handler_name in bound_handlers:
-                logger.info(f"  ✓ {event_type} -> {instance_class_name}.{handler_name}")
+                        logger.info(
+                            f"{instance_class_name}: ✓ {event_type} -> {instance_class_name}.{handler_name}"
+                        )
 
     @classmethod
     def get_handlers(cls, event_type: str) -> List[HandlerInfo[Any]]:
