@@ -104,7 +104,7 @@ class WebhookRegistry:
                         handler_info.defined_in_class = instance_class_name
                         bound_handlers.append((event_type, handler_name))
                         logger.info(
-                            f"{instance_class_name}: ✓ {event_type} -> {instance_class_name}.{handler_name}"
+                            f"{event_type} -> {instance_class_name}.{handler_name}"
                         )
 
     @classmethod
