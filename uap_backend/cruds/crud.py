@@ -8,7 +8,7 @@ from uaproject_backend_schemas.webhooks import (
     WebhookUpdate,
 )
 
-from uap_backend.base.crud import BaseCRUD
+from uap_backend.cruds.base import BaseCRUD
 
 
 class WebhookCRUDService(BaseCRUD[WebhookResponse]):

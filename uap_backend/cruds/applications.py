@@ -1,14 +1,14 @@
 from typing import Any, Dict, List, Optional
 
-from uap_backend.base.crud import BaseCRUD
-
-from .schemas import (
+from uaproject_backend_schemas.applications import (
     ApplicationCreate,
     ApplicationFilterParams,
     ApplicationResponse,
     ApplicationStatus,
     ApplicationUpdate,
 )
+
+from uap_backend.cruds.base import BaseCRUD
 
 
 class ApplicationCRUDService(BaseCRUD[ApplicationResponse]):

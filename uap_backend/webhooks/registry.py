@@ -4,8 +4,8 @@ import inspect
 from typing import Any, Callable, Coroutine, Dict, Generic, List, Optional, Set, Type, TypeVar
 
 from pydantic import BaseModel
+from uaproject_backend_schemas.base import PayloadModels
 
-from uap_backend.base.schemas import PayloadModels
 from uap_backend.logger import get_logger
 
 T = TypeVar("T", bound=BaseModel)

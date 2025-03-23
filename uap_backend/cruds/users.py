@@ -3,7 +3,7 @@ from typing import Dict, List, Optional
 from uaproject_backend_schemas import SortOrder
 from uaproject_backend_schemas.users import UserFilterParams, UserResponse, UserSort, UserUpdate
 
-from uap_backend.base.crud import BaseCRUD
+from uap_backend.cruds.base import BaseCRUD
 
 __all__ = ["UserCRUDService", "UserCRUDServiceInit"]
 

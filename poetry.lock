@@ -983,7 +983,7 @@ vulture = "^2.14"
 type = "git"
 url = "https://github.com/mc-uaproject/uaproject-backend-schemas"
 reference = "HEAD"
-resolved_reference = "faa6560a29e0d7b3dbebfaa7e11f4e91d45fe37c"
+resolved_reference = "c0ca9a4d1740d8310654529caeb2c71ed2e32671"
 
 [[package]]
 name = "vulture"

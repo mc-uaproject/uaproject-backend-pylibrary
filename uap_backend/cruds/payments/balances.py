@@ -2,7 +2,7 @@ from typing import Dict, List, Optional
 
 from uaproject_backend_schemas.payments import BalanceFilterParams, BalanceResponse, BalanceUpdate
 
-from uap_backend.base.crud import BaseCRUD
+from uap_backend.cruds.base import BaseCRUD
 
 
 class BalanceCRUDService(BaseCRUD[BalanceResponse]):

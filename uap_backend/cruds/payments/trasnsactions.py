@@ -2,11 +2,9 @@ from decimal import Decimal
 from typing import Any, Dict, List, Literal, Optional, overload
 
 from uaproject_backend_schemas.payments import TransactionFilterParams, TransactionResponse
+from uaproject_backend_schemas.payments.transactions import TransactionType
 
-from uap_backend.base.crud import BaseCRUD
-from uap_backend.payments.transactions.payload import (
-    TransactionType,
-)
+from uap_backend.cruds.base import BaseCRUD
 
 
 class TransactionCRUDService(BaseCRUD[TransactionResponse]):

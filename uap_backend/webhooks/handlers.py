@@ -1,13 +1,28 @@
+from typing import Any, Dict, Optional
 
 from fastapi import FastAPI, HTTPException, Request
+from pydantic import BaseModel
+from uaproject_backend_schemas.base import BothPayloadBaseModel, PayloadModels
 
-from uap_backend.base.schemas import BothPayloadBaseModel, PayloadModels
 from uap_backend.logger import get_logger
-from uap_backend.webhooks.schemas import WebhookHandlerResponse
 
 from .registry import WebhookRegistry
 
 logger = get_logger(__name__)
+
+
+class WebhookHandlerResponse(BaseModel):
+    success: bool
+    message: str
+    data: Optional[Dict[str, Any]] = None
+
+    @classmethod
+    def create(cls, success: bool, message: str, data: Any = None) -> "WebhookHandlerResponse":
+        try:
+            return cls(success=success, message=message, data=data)
+        except Exception:
+            return cls(success=success, message=message, data=None)
+
 
 class WebhookManager:
     def __init__(self, app: FastAPI):
@@ -25,8 +40,7 @@ class WebhookManager:
 
         if not handler_infos:
             raise HTTPException(
-                status_code=404,
-                detail=f"No handler registered for event type: {data.scope}"
+                status_code=404, detail=f"No handler registered for event type: {data.scope}"
             )
 
         payload_dict = await request.json()
@@ -38,8 +52,7 @@ class WebhookManager:
             try:
                 if isinstance(payload, BothPayloadBaseModel):
                     result = await handler_info.handler(
-                        before=payload.payload["before"],
-                        after=payload.payload["after"]
+                        before=payload.payload["before"], after=payload.payload["after"]
                     )
                 else:
                     result = await handler_info.handler(payload=payload.payload)
@@ -50,7 +63,5 @@ class WebhookManager:
                 logger.exception(f"Error processing webhook for {data.scope}: {e}")
 
         return WebhookHandlerResponse.create(
-            success=True,
-            message=f"Successfully processed {data.scope} event",
-            data=results
+            success=True, message=f"Successfully processed {data.scope} event", data=results
         )
