@@ -10,6 +10,7 @@ python = "^3.12"
 pydantic-settings = "^2.7.1"
 aiohttp = "^3.11.11"
 fastapi = "^0.115.8"
+uaproject-backend-schemas = {git = "https://github.com/mc-uaproject/uaproject-backend-schemas"}
 
 
 [build-system]

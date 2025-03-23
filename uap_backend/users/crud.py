@@ -1,11 +1,12 @@
 from typing import Dict, List, Optional
 
-from uap_backend.base.crud import BaseCRUD
-from uap_backend.base.schemas import SortOrder
+from uaproject_backend_schemas import SortOrder
+from uaproject_backend_schemas.users import UserFilterParams, UserResponse, UserSort, UserUpdate
 
-from .schemas import UserFilterParams, UserResponse, UserSort, UserUpdate
+from uap_backend.base.crud import BaseCRUD
 
 __all__ = ["UserCRUDService", "UserCRUDServiceInit"]
+
 
 class UserCRUDService(BaseCRUD[UserResponse]):
     response_model = UserResponse
@@ -48,16 +49,10 @@ class UserCRUDService(BaseCRUD[UserResponse]):
         return await self.delete(f"/users/{user_id}")
 
     async def search_users_by_nickname(
-        self,
-        minecraft_nickname: str,
-        limit: int = 50
+        self, minecraft_nickname: str, limit: int = 50
     ) -> List[UserResponse]:
         """Search users by Minecraft nickname"""
-        params = {
-            "minecraft_nickname": minecraft_nickname,
-            "limit": limit,
-            "skip": 0
-        }
+        params = {"minecraft_nickname": minecraft_nickname, "limit": limit, "skip": 0}
         return await self.get("/users/search", params=params, is_list=True)
 
 

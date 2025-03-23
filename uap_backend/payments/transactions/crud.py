@@ -1,10 +1,10 @@
 from decimal import Decimal
 from typing import Any, Dict, List, Literal, Optional, overload
 
+from uaproject_backend_schemas.payments import TransactionFilterParams, TransactionResponse
+
 from uap_backend.base.crud import BaseCRUD
-from uap_backend.payments.transactions.schemas import (
-    TransactionFilterParams,
-    TransactionResponse,
+from uap_backend.payments.transactions.payload import (
     TransactionType,
 )
 
@@ -85,13 +85,8 @@ class TransactionCRUDService(BaseCRUD[TransactionResponse]):
 
     @overload
     async def create_transaction(
-        self,
-        *,
-        amount: Decimal,
-        type: Literal[TransactionType.SYSTEM],
-        recipient_id
-    ):
-        ...
+        self, *, amount: Decimal, type: Literal[TransactionType.SYSTEM], recipient_id
+    ): ...
 
     async def create_transaction(self, **kwargs: Any) -> TransactionResponse:
         """Create a transaction with specific parameters."""

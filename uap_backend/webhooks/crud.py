@@ -1,14 +1,14 @@
 from typing import Dict, List, Optional
 
-from uap_backend.base.crud import BaseCRUD
-
-from .schemas import (
+from uaproject_backend_schemas.webhooks import (
     WebhookCreate,
     WebhookFilterParams,
     WebhookResponse,
     WebhookStatus,
     WebhookUpdate,
 )
+
+from uap_backend.base.crud import BaseCRUD
 
 
 class WebhookCRUDService(BaseCRUD[WebhookResponse]):

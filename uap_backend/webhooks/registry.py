@@ -59,11 +59,19 @@ class WebhookRegistry:
     @classmethod
     def bind_handlers(cls, instance):
         instance_class_name = instance.__class__.__name__
+        _, duplicate_handler_names = cls._find_duplicate_handlers(
+            instance_class_name
+        )
+        cls._log_duplicate_handlers(instance_class_name, duplicate_handler_names)
+        bound_handlers = cls._bind_instance_handlers(instance, instance_class_name)
+        cls._log_bound_handlers(bound_handlers, instance_class_name)
+
+    @classmethod
+    def _find_duplicate_handlers(cls, instance_class_name: str) -> tuple[Set[str], Set[str]]:
         handler_names_seen: Set[str] = set()
         duplicate_handler_names: Set[str] = set()
-        bound_handlers = []
 
-        for event_type, handler_infos in cls._handlers.items():
+        for handler_infos in cls._handlers.values():
             for handler_info in handler_infos:
                 if handler_info.defined_in_class == instance_class_name:
                     handler_name = handler_info.handler_name
@@ -71,10 +79,18 @@ class WebhookRegistry:
                         duplicate_handler_names.add(handler_name)
                     handler_names_seen.add(handler_name)
 
+        return handler_names_seen, duplicate_handler_names
+
+    @classmethod
+    def _log_duplicate_handlers(cls, instance_class_name: str, duplicate_handler_names: Set[str]):
         if duplicate_handler_names:
             logger.warning(
                 f"Duplicate handler names found in {instance_class_name}: {duplicate_handler_names}"
             )
+
+    @classmethod
+    def _bind_instance_handlers(cls, instance, instance_class_name: str) -> List[tuple]:
+        bound_handlers = []
 
         for event_type, handler_infos in cls._handlers.items():
             for handler_info in handler_infos:
@@ -103,9 +119,13 @@ class WebhookRegistry:
                         handler_info.bound_instance = instance
                         handler_info.defined_in_class = instance_class_name
                         bound_handlers.append((event_type, handler_name))
-                        logger.info(
-                            f"{event_type} -> {instance_class_name}.{handler_name}"
-                        )
+
+        return bound_handlers
+
+    @classmethod
+    def _log_bound_handlers(cls, bound_handlers: List[tuple], instance_class_name: str):
+        for event_type, handler_name in bound_handlers:
+            logger.info(f"{event_type} -> {instance_class_name}.{handler_name}")
 
     @classmethod
     def get_handlers(cls, event_type: str) -> List[HandlerInfo[Any]]:
@@ -119,8 +139,8 @@ class WebhookRegistry:
     def log_registered_scopes(cls):
         logger.info("=== All registered webhook scopes ===")
 
-        instance_handlers = {}
-        unbound_scopes = {}
+        instance_handlers: dict[str, list] = {}
+        unbound_scopes: dict[str, list] = {}
 
         for scope, handlers in cls._handlers.items():
             for handler in handlers:
