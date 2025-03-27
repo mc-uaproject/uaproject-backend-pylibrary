@@ -98,12 +98,16 @@ class BaseCRUD(Generic[ModelType, CreateSchemaType, UpdateSchemaType, FilterSche
         endpoint: str,
         *,
         params: Optional[Dict[str, Any]] = None,
-        json: Optional[Dict[str, Any]] = None,
+        json: Optional[Dict[str, Any]] | BaseModel = None,
         response_model: Optional[Type[ModelType]] = None,
         is_list: bool = False,
     ) -> Union[ModelType, List[ModelType], None]:
         session = await self._get_session()
         url = f"{self.base_url}{endpoint}"
+
+        if isinstance(json, BaseModel):
+            json = json.model_dump(exclude_unset=True)
+
         try:
             async with session.request(
                 method=method, url=url, params=params, json=json
