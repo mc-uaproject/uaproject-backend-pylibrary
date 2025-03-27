@@ -22,6 +22,13 @@ class UserCRUDService(BaseCRUD[UserResponse]):
         if users:
             return users[0]
 
+    async def get_user_details_by_nickname(self, nickname: str) -> Optional[UserResponse]:
+        """Get details of a specific user"""
+
+        users = await self.list_users(UserFilterParams(minecraft_nickname=nickname))
+        if users:
+            return users[0]
+
     async def list_users(
         self,
         filters: Optional[UserFilterParams] = None,
