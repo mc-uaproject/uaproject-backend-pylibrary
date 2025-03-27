@@ -1,5 +1,6 @@
 import asyncio
 from functools import wraps
+from time import time
 from types import TracebackType
 from typing import Any, Dict, Generic, List, Optional, Type, TypeVar, Union
 
@@ -20,7 +21,7 @@ class SimpleCache:
     _cache_lock = asyncio.Lock()
 
     @classmethod
-    async def cached(cls, cache_key: Optional[str] = None, duration: float = 300):
+    def cached(cls, cache_key: Optional[str] = None, duration: float = 300):
         def decorator(func):
             @wraps(func)
             async def wrapper(*args, **kwargs):
@@ -29,13 +30,13 @@ class SimpleCache:
                     cached_result = cls._cache.get(key)
                     if cached_result:
                         result, expiration = cached_result
-                        if expiration > asyncio.get_event_loop().time():
+                        if expiration > time():
                             return result
 
                 result = await func(*args, **kwargs)
 
                 async with cls._cache_lock:
-                    cls._cache[key] = (result, asyncio.get_event_loop().time() + duration)
+                    cls._cache[key] = (result, time() + duration)
 
                 return result
 
