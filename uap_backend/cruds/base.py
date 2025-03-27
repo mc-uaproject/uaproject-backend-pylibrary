@@ -101,7 +101,6 @@ class BaseCRUD(Generic[ModelType, CreateSchemaType, UpdateSchemaType, FilterSche
         json: Optional[Dict[str, Any]] = None,
         response_model: Optional[Type[ModelType]] = None,
         is_list: bool = False,
-        cache_duration: Optional[float] = None,
     ) -> Union[ModelType, List[ModelType], None]:
         session = await self._get_session()
         url = f"{self.base_url}{endpoint}"
@@ -150,7 +149,6 @@ class BaseCRUD(Generic[ModelType, CreateSchemaType, UpdateSchemaType, FilterSche
         *,
         params: Optional[Dict[str, Any]] = None,
         response_model: Optional[Type[ModelType]] = None,
-        cache_duration: Optional[float] = None,
     ) -> ModelType:
         endpoint = endpoint or f"/users/{user_id}"
         return await self._request(
@@ -162,12 +160,11 @@ class BaseCRUD(Generic[ModelType, CreateSchemaType, UpdateSchemaType, FilterSche
 
     async def get_list(
         self,
-        endpoint: str,
+        endpoint: str = "",
         *,
         filters: Optional[FilterSchemaType] = None,
         params: Optional[Dict[str, Any]] = {},
         response_model: Optional[Type[ModelType]] = None,
-        cache_duration: Optional[float] = None,
         **kwargs: Any,
     ) -> List[ModelType]:
         if filters:
