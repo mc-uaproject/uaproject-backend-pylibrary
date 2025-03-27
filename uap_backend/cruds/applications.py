@@ -15,6 +15,9 @@ class ApplicationCRUDService(
 ):
     response_model = ApplicationResponse
 
+    def __init__(self, cache_duration=300):
+        super().__init__(cache_duration, "/applications")
+
     async def update_status(
         self, application_id: int, status: ApplicationStatus
     ) -> ApplicationResponse:

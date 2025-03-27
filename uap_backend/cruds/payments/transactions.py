@@ -15,6 +15,9 @@ class TransactionCRUDService(
     BaseCRUD[TransactionResponse, TransactionBase, TransactionUpdate, TransactionFilterParams]
 ):
     response_model = TransactionResponse
+    
+    def __init__(self, cache_duration = 300):
+        super().__init__(cache_duration, "/payments/transactions")
 
     async def get_transaction_statistics(
         self, transaction_type: Optional[TransactionType] = None
