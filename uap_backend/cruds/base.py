@@ -15,10 +15,41 @@ UpdateSchemaType = TypeVar("UpdateSchemaType", bound=BaseModel)
 FilterSchemaType = TypeVar("FilterSchemaType", bound=BaseModel)
 
 
-class CacheEntry:
-    def __init__(self, value, expiration: float):
-        self.value = value
-        self.expiration = expiration
+class SimpleCache:
+    _cache: Dict[str, Any] = {}
+    _cache_lock = asyncio.Lock()
+
+    @classmethod
+    async def cached(cls, cache_key: Optional[str] = None, duration: float = 300):
+        def decorator(func):
+            @wraps(func)
+            async def wrapper(*args, **kwargs):
+                key = cache_key or f"{func.__module__}.{func.__name__}:{args}:{kwargs}"
+                async with cls._cache_lock:
+                    cached_result = cls._cache.get(key)
+                    if cached_result:
+                        result, expiration = cached_result
+                        if expiration > asyncio.get_event_loop().time():
+                            return result
+
+                result = await func(*args, **kwargs)
+
+                async with cls._cache_lock:
+                    cls._cache[key] = (result, asyncio.get_event_loop().time() + duration)
+
+                return result
+
+            return wrapper
+
+        return decorator
+
+    @classmethod
+    async def clear_cache(cls, key: Optional[str] = None):
+        async with cls._cache_lock:
+            if key:
+                cls._cache.pop(key, None)
+            else:
+                cls._cache.clear()
 
 
 class BaseCRUD(Generic[ModelType, CreateSchemaType, UpdateSchemaType, FilterSchemaType]):
@@ -32,34 +63,7 @@ class BaseCRUD(Generic[ModelType, CreateSchemaType, UpdateSchemaType, FilterSche
         self.prefix = prefix
         self.base_url: str = f"{settings.API_BASE_URL.rstrip('/')}{settings.API_PREFIX}{prefix}"
         self._session: Optional[aiohttp.ClientSession] = None
-        self._cache: Dict[str, CacheEntry] = {}
-        self._cache_lock = asyncio.Lock()
-        self._default_cache_duration = cache_duration
-
-    def cached(self, cache_key: Optional[str] = None, duration: Optional[float] = None):
-        def decorator(func):
-            @wraps(func)
-            async def wrapper(*args, **kwargs):
-                key = cache_key or f"{func.__module__}.{func.__name__}:{args}:{kwargs}"
-
-                async with self._cache_lock:
-                    cache_entry = self._cache.get(key)
-                    if cache_entry and cache_entry.expiration > asyncio.get_event_loop().time():
-                        return cache_entry.value
-
-                result = await func(*args, **kwargs)
-
-                async with self._cache_lock:
-                    cache_duration_to_use = duration or self._default_cache_duration
-                    self._cache[key] = CacheEntry(
-                        result, asyncio.get_event_loop().time() + cache_duration_to_use
-                    )
-
-                return result
-
-            return wrapper
-
-        return decorator
+        self._cache_duration = cache_duration
 
     async def _get_session(self) -> aiohttp.ClientSession:
         if not self._session or self._session.closed:
@@ -75,10 +79,6 @@ class BaseCRUD(Generic[ModelType, CreateSchemaType, UpdateSchemaType, FilterSche
         if self._session and not self._session.closed:
             await self._session.close()
 
-        async with self._cache_lock:
-            current_time = asyncio.get_event_loop().time()
-            self._cache = {k: v for k, v in self._cache.items() if v.expiration > current_time}
-
     async def __aenter__(self) -> "BaseCRUD[ModelType]":
         return self
 
@@ -90,6 +90,7 @@ class BaseCRUD(Generic[ModelType, CreateSchemaType, UpdateSchemaType, FilterSche
     ) -> None:
         await self.close()
 
+    @SimpleCache.cached()
     async def _request(
         self,
         method: str,
@@ -101,14 +102,6 @@ class BaseCRUD(Generic[ModelType, CreateSchemaType, UpdateSchemaType, FilterSche
         is_list: bool = False,
         cache_duration: Optional[float] = None,
     ) -> Union[ModelType, List[ModelType], None]:
-        cache_key = f"{method}:{endpoint}:{params}:{json}"
-
-        if method == "GET":
-            async with self._cache_lock:
-                cache_entry = self._cache.get(cache_key)
-                if cache_entry and cache_entry.expiration > asyncio.get_event_loop().time():
-                    return cache_entry.value
-
         session = await self._get_session()
         url = f"{self.base_url}{endpoint}"
         try:
@@ -129,84 +122,25 @@ class BaseCRUD(Generic[ModelType, CreateSchemaType, UpdateSchemaType, FilterSche
                     else model.model_validate(data)
                 )
 
-                if method == "GET":
-                    async with self._cache_lock:
-                        self._cache[cache_key] = CacheEntry(
-                            result,
-                            asyncio.get_event_loop().time()
-                            + (cache_duration or self._default_cache_duration),
-                        )
-
                 return result
 
         except aiohttp.ClientError as e:
             raise APIError(str(e))
 
-    @cached()
-    async def _get(
-        self,
-        endpoint: str,
-        *,
-        params: Optional[Dict[str, Any]] = None,
-        response_model: Optional[Type[ModelType]] = None,
-        is_list: bool = False,
-        cache_duration: Optional[float] = None,
-    ) -> Union[ModelType, List[ModelType]]:
-        return await self._request(
-            "GET",
-            endpoint,
-            params=params,
-            response_model=response_model,
-            is_list=is_list,
-            cache_duration=cache_duration,
-        )
-
-    async def _post(
-        self,
-        endpoint: str,
-        *,
-        data: Optional[BaseModel] = None,
-        response_model: Optional[Type[ModelType]] = None,
-    ) -> ModelType:
-        json_data = data.model_dump(exclude_unset=True) if data else None
-        return await self._request("POST", endpoint, json=json_data, response_model=response_model)
-
-    async def _patch(
-        self,
-        endpoint: str,
-        *,
-        data: Optional[BaseModel] = None,
-        response_model: Optional[Type[ModelType]] = None,
-    ) -> ModelType:
-        json_data = data.model_dump(exclude_unset=True) if data else None
-        return await self._request("PATCH", endpoint, json=json_data, response_model=response_model)
-
-    async def _delete(
-        self,
-        endpoint: str,
-        *,
-        response_model: Optional[Type[ModelType]] = None,
-    ) -> ModelType:
-        return await self._request("DELETE", endpoint, response_model=response_model)
-
     async def clear_cache(self, key: Optional[str] = None):
-        async with self._cache_lock:
-            if key:
-                self._cache.pop(key, None)
-            else:
-                self._cache.clear()
+        await SimpleCache.clear_cache(key)
 
     async def create(self, data: CreateSchemaType) -> ModelType:
-        return await self._post("", data)
+        return await self._request("POST", "", json=data.model_dump(exclude_unset=True))
 
     async def update(self, id: Union[int, str], data: UpdateSchemaType) -> ModelType:
-        return await self._patch(f"/{id}", data)
+        return await self._request("PATCH", f"/{id}", json=data.model_dump(exclude_unset=True))
 
     async def delete(self, id: Union[int, str]) -> ModelType:
-        return await self._delete(f"/{id}")
+        return await self._request("DELETE", f"/{id}")
 
     async def get(self, id: Union[int, str]) -> ModelType:
-        return await self._get(id)
+        return await self._request("GET", f"/{id}")
 
     async def get_by_user_id(
         self,
@@ -218,11 +152,11 @@ class BaseCRUD(Generic[ModelType, CreateSchemaType, UpdateSchemaType, FilterSche
         cache_duration: Optional[float] = None,
     ) -> ModelType:
         endpoint = endpoint or f"/users/{user_id}"
-        return await self._get(
+        return await self._request(
+            "GET",
             endpoint,
             params=params or {"user_id": user_id},
             response_model=response_model,
-            cache_duration=cache_duration,
         )
 
     async def get_list(
@@ -241,10 +175,10 @@ class BaseCRUD(Generic[ModelType, CreateSchemaType, UpdateSchemaType, FilterSche
         if kwargs:
             params.update(kwargs)
 
-        return await self._get(
+        return await self._request(
+            "GET",
             endpoint,
             params=params,
             response_model=response_model,
             is_list=True,
-            cache_duration=cache_duration,
         )
