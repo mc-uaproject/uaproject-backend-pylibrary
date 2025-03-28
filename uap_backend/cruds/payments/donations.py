@@ -1,42 +1,31 @@
-from typing import Any, Dict, Optional
+from uaproject_backend_schemas.payments.donations import (
+    DonationCreate,
+    DonationFilterParams,
+    DonationResponse,
+    DonationUpdate,
+)
 
-import aiohttp
-
-from uap_backend.config import settings
-from uap_backend.exceptions import ServiceError
+from uap_backend.cruds.base import BaseCRUD
 
 
-class BaseCRUD:
-    def __init__(self):
-        self._session: Optional[aiohttp.ClientSession] = None
+class DonationCRUDService(
+    BaseCRUD[DonationResponse, DonationCreate, DonationUpdate, DonationFilterParams]
+):
+    response_model = DonationResponse
 
-    async def get_session(self) -> aiohttp.ClientSession:
-        if self._session is None or self._session.closed:
-            self._session = aiohttp.ClientSession(
-                headers={
-                    "Content-Type": "application/json",
-                    "Authorization": f"Bearer {settings.BACKEND_API_KEY}",
-                }
-            )
-        return self._session
+    def __init__(self, cache_duration=300):
+        super().__init__(cache_duration, "/payments/donations")
 
-    async def close(self) -> None:
-        if self._session and not self._session.closed:
-            await self._session.close()
+    async def get_statistics(
+        self,
+    ) -> dict:
+        """
+        Get statistics for donations.
+        """
+        return await self._request(
+            method="GET",
+            endpoint="/statistics/summary",
+        )
 
-    async def _request(
-        self, method: str, endpoint: str, **kwargs: Any
-    ) -> Dict[str, Any]:
-        session = await self.get_session()
-        try:
-            async with session.request(
-                method, settings.API_FULL_URL + endpoint, **kwargs
-            ) as response:
-                if response.status >= 400:
-                    raise ServiceError(
-                        f"Service request failed: {response.status}",
-                        status_code=response.status,
-                    )
-                return await response.json()
-        except aiohttp.ClientError as e:
-            raise ServiceError(f"Service request failed: {str(e)}")
+
+DonationCRUDServiceInit = DonationCRUDService()
