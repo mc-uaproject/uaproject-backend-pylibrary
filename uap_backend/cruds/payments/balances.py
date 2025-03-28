@@ -1,5 +1,9 @@
 
-from uaproject_backend_schemas.payments import BalanceFilterParams, BalanceResponse, BalanceUpdate
+from uaproject_backend_schemas.payments.balances import (
+    BalanceFilterParams,
+    BalanceResponse,
+    BalanceUpdate,
+)
 
 from uap_backend.cruds.base import BaseCRUD
 
