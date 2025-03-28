@@ -1,5 +1,6 @@
 
 .qodo
 .idea
+.vscode
 **/__pycache__
 poetry.lock
