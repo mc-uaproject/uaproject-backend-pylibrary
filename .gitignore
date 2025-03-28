@@ -2,3 +2,4 @@
 .qodo
 .idea
 **/__pycache__
+poetry.lock
