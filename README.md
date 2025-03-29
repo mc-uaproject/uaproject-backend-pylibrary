@@ -18,9 +18,9 @@ This repository contains the backend library for the UAProject, implemented in P
     ```bash
     cd uaproject-backend-pylibrary
     ```
-3. Install dependencies:
+3. Install dependencies using Poetry:
     ```bash
-    pip install -r requirements.txt
+    poetry install
     ```
 
 ## Usage
