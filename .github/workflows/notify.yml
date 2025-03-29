@@ -13,7 +13,7 @@ jobs:
       - name: Send Discord notification
         uses: stegzilla/discord-notify@v2
         with:
-          webhook_url: ${{ secrets.WEBHOOK_DISCORD_URL }}
+          webhook_url: ${{ secrets.DISCORD_WEBHOOK_URL }}
           title: New PR Event
           message: |
             **Event:** ${{ github.event_name }}
