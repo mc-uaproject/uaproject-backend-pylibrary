@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import asyncio
 import inspect
 from typing import Any, Callable, Coroutine, Dict, Generic, List, Optional, Set, Type, TypeVar
 
 from pydantic import BaseModel
 from uaproject_backend_schemas.base import PayloadModels
+from uaproject_backend_schemas.webhooks import WebhookStatus
 
+from uap_backend.cruds.webhooks import WebhookCRUDServiceInit
 from uap_backend.logger import get_logger
 
 T = TypeVar("T", bound=BaseModel)
@@ -59,12 +62,11 @@ class WebhookRegistry:
     @classmethod
     def bind_handlers(cls, instance):
         instance_class_name = instance.__class__.__name__
-        _, duplicate_handler_names = cls._find_duplicate_handlers(
-            instance_class_name
-        )
+        _, duplicate_handler_names = cls._find_duplicate_handlers(instance_class_name)
         cls._log_duplicate_handlers(instance_class_name, duplicate_handler_names)
         bound_handlers = cls._bind_instance_handlers(instance, instance_class_name)
         cls._log_bound_handlers(bound_handlers, instance_class_name)
+        cls._include_scopes_to_webhook([event_type for event_type, _ in bound_handlers])
 
     @classmethod
     def _find_duplicate_handlers(cls, instance_class_name: str) -> tuple[Set[str], Set[str]]:
@@ -123,6 +125,20 @@ class WebhookRegistry:
         return bound_handlers
 
     @classmethod
+    def _include_scope_to_webhook(cls, scope: str):
+        loop = asyncio.get_running_loop()
+        if loop is not None:
+            loop.create_task(cls._ainclude_scopes_to_webhook(scope))
+
+    @classmethod
+    async def _ainclude_scopes_to_webhook(cls, scopes: List[str]):
+        webhook = await WebhookCRUDServiceInit.get("me")
+
+        webhook.status = WebhookStatus.ACTIVE
+        webhook.scopes.update([{scope: True} for scope in scopes])
+        await WebhookCRUDServiceInit.update(webhook.id, webhook)
+
+    @classmethod
     def _log_bound_handlers(cls, bound_handlers: List[tuple], instance_class_name: str):
         for event_type, handler_name in bound_handlers:
             logger.info(f"{event_type} -> {instance_class_name}.{handler_name}")
@@ -134,32 +150,3 @@ class WebhookRegistry:
     @classmethod
     def get_all_handlers(cls) -> Dict[str, List[HandlerInfo[Any]]]:
         return cls._handlers
-
-    @classmethod
-    def log_registered_scopes(cls):
-        logger.info("=== All registered webhook scopes ===")
-
-        instance_handlers: dict[str, list] = {}
-        unbound_scopes: dict[str, list] = {}
-
-        for scope, handlers in cls._handlers.items():
-            for handler in handlers:
-                if handler.bound_instance:
-                    instance_name = handler.bound_instance.__class__.__name__
-                    if instance_name not in instance_handlers:
-                        instance_handlers[instance_name] = []
-                    instance_handlers[instance_name].append((scope, handler.handler_name))
-                else:
-                    if scope not in unbound_scopes:
-                        unbound_scopes[scope] = []
-                    unbound_scopes[scope].append(handler.handler_name)
-
-        for instance_name, handlers in instance_handlers.items():
-            logger.info(f"Class: {instance_name}")
-            for scope, handler_name in handlers:
-                logger.info(f"  - {scope} -> {handler_name}")
-
-        if unbound_scopes:
-            logger.info("Unbound scopes:")
-            for scope, handlers in unbound_scopes.items():
-                logger.info(f"  - {scope}: {', '.join(handlers)}")

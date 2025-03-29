@@ -1,3 +1,4 @@
+from typing import Literal
 
 from uaproject_backend_schemas.applications import (
     ApplicationCreate,
@@ -19,7 +20,7 @@ class ApplicationCRUDService(
         super().__init__(cache_duration, "/applications")
 
     async def update_status(
-        self, application_id: int, status: ApplicationStatus
+        self, application_id: Literal["me"] | int, status: ApplicationStatus
     ) -> ApplicationResponse:
         """Update application status"""
         return await self._request("POST", f"/{application_id}/status/{status.value}")
