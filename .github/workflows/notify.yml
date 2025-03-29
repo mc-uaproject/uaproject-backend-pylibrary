@@ -1,7 +1,10 @@
 name: 'New PR Notification'
 on:
   pull_request: 
-    types: [opened, reopened]
+    types: [opened, reopened, closed]
+  push:
+    branches:
+      - main
 
 jobs:
   notify:
@@ -11,8 +14,12 @@ jobs:
         uses: stegzilla/discord-notify@v2
         with:
           webhook_url: ${{ secrets.WEBHOOK_DISCORD_URL }}
-          title: New PR opened
-          message: "**${{ github.event.pull_request.title }}**\n**Creator:** ${{ github.event.pull_request.user.login }}\n${{ github.event.pull_request.html_url }}"
+          title: New PR Event
+          message: |
+            **Event:** ${{ github.event_name }}
+            **${{ github.event.pull_request.title || github.event.head_commit.message }}**
+            **Creator:** ${{ github.event.pull_request.user.login || github.event.pusher.name }}
+            [View on GitHub](${{ github.event.pull_request.html_url || github.event.head_commit.url }})
           include_image: true
           avatar_url: https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png
-          username: GitHub PR Notifier
+          username: GitHub Notifier
