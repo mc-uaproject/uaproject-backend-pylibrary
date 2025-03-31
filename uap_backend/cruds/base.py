@@ -1,5 +1,6 @@
 import asyncio
 from datetime import datetime
+from decimal import Decimal
 from functools import wraps
 from json import JSONEncoder, dumps
 from time import time
@@ -17,10 +18,13 @@ CreateSchemaType = TypeVar("CreateSchemaType", bound=BaseModel)
 UpdateSchemaType = TypeVar("UpdateSchemaType", bound=BaseModel)
 FilterSchemaType = TypeVar("FilterSchemaType", bound=BaseModel)
 
-
 class DateTimeEncoder(JSONEncoder):
     def default(self, obj):
-        return obj.isoformat() if isinstance(obj, datetime) else super().default(obj)
+        if isinstance(obj, datetime):
+            return obj.isoformat()
+        elif isinstance(obj, Decimal):
+            return float(obj)
+        return super().default(obj)
 
 
 class SimpleCache:
