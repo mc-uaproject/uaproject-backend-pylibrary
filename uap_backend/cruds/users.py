@@ -45,7 +45,7 @@ class UserCRUDService(BaseCRUD[UserResponse, UserCreate, UserUpdate, UserFilterP
         filters: Optional[UserFilterParams] = None,
     ):
         return await self.get_list(
-            "/search",
+            "/list/search",
             filters=filters,
             params={
                 "similar": similar,
