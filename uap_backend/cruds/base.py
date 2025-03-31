@@ -1,5 +1,7 @@
 import asyncio
+from datetime import datetime
 from functools import wraps
+from json import JSONEncoder, dumps
 from time import time
 from types import TracebackType
 from typing import Any, Dict, Generic, List, Optional, Type, TypeVar, Union
@@ -14,6 +16,11 @@ ModelType = TypeVar("ModelType")
 CreateSchemaType = TypeVar("CreateSchemaType", bound=BaseModel)
 UpdateSchemaType = TypeVar("UpdateSchemaType", bound=BaseModel)
 FilterSchemaType = TypeVar("FilterSchemaType", bound=BaseModel)
+
+
+class DateTimeEncoder(JSONEncoder):
+    def default(self, obj):
+        return obj.isoformat() if isinstance(obj, datetime) else super().default(obj)
 
 
 class SimpleCache:
@@ -72,7 +79,8 @@ class BaseCRUD(Generic[ModelType, CreateSchemaType, UpdateSchemaType, FilterSche
                 headers={
                     "Content-Type": "application/json",
                     "Authorization": f"Bearer {settings.BACKEND_API_KEY}",
-                }
+                },
+                json_serialize=lambda obj: dumps(obj, cls=DateTimeEncoder)
             )
         return self._session
 
