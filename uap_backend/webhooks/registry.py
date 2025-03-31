@@ -136,6 +136,7 @@ class WebhookRegistry:
 
         if not webhook:
             logger.warning("Cant find my webhook")
+            return
 
         webhook.status = WebhookStatus.ACTIVE
         webhook.scopes.update([{scope: True} for scope in scopes])
