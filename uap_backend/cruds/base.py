@@ -144,10 +144,10 @@ class BaseCRUD(Generic[ModelType, CreateSchemaType, UpdateSchemaType, FilterSche
         await SimpleCache.clear_cache(key)
 
     async def create(self, data: CreateSchemaType) -> ModelType:
-        return await self._request("POST", "", json=data.model_dump(exclude_unset=True))
+        return await self._request("POST", "", json=data.model_dump(exclude_none=True))
 
     async def update(self, id: Union[int, str], data: UpdateSchemaType) -> ModelType:
-        return await self._request("PATCH", f"/{id}", json=data.model_dump(exclude_unset=True))
+        return await self._request("PATCH", f"/{id}", json=data.model_dump(exclude_none=True))
 
     async def delete(self, id: Union[int, str]) -> ModelType:
         return await self._request("DELETE", f"/{id}")
