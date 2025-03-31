@@ -125,7 +125,7 @@ class WebhookRegistry:
         return bound_handlers
 
     @classmethod
-    def _include_scope_to_webhook(cls, scope: str):
+    def _include_scopes_to_webhook(cls, scope: str):
         loop = asyncio.get_running_loop()
         if loop is not None:
             loop.create_task(cls._ainclude_scopes_to_webhook(scope))
