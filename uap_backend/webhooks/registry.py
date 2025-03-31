@@ -139,7 +139,7 @@ class WebhookRegistry:
             return
 
         webhook.status = WebhookStatus.ACTIVE
-        webhook.scopes.update([{scope: True} for scope in scopes])
+        webhook.scopes.update(dict.fromkeys(scopes, True))
         await WebhookCRUDServiceInit.update(webhook.id, webhook)
 
     @classmethod
