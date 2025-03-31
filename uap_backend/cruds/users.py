@@ -37,7 +37,7 @@ class UserCRUDService(BaseCRUD[UserResponse, UserCreate, UserUpdate, UserFilterP
     async def search_by_nickname(
         self,
         nickname: str,
-        similar: int,
+        similar: int = 0.75,
         skip: int = 0,
         limit: int = 10,
         sort_by: UserSort = UserSort.CREATED_AT,
