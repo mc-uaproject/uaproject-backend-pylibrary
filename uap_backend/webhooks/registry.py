@@ -134,6 +134,9 @@ class WebhookRegistry:
     async def _ainclude_scopes_to_webhook(cls, scopes: List[str]):
         webhook = await WebhookCRUDServiceInit.get("me")
 
+        if not webhook:
+            logger.warning("Cant find my webhook")
+
         webhook.status = WebhookStatus.ACTIVE
         webhook.scopes.update([{scope: True} for scope in scopes])
         await WebhookCRUDServiceInit.update(webhook.id, webhook)

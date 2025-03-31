@@ -120,16 +120,13 @@ class BaseCRUD(Generic[ModelType, CreateSchemaType, UpdateSchemaType, FilterSche
                 data = await response.json()
                 model = response_model or self.response_model
 
-                result = (
+                return (
                     [model.model_validate(item) for item in data]
                     if is_list
                     else model.model_validate(data)
                 )
-
-                return result
-
         except aiohttp.ClientError as e:
-            raise APIError(str(e))
+            raise APIError(str(e)) from e
 
     async def clear_cache(self, key: Optional[str] = None):
         await SimpleCache.clear_cache(key)
@@ -167,10 +164,12 @@ class BaseCRUD(Generic[ModelType, CreateSchemaType, UpdateSchemaType, FilterSche
         endpoint: str = "",
         *,
         filters: Optional[FilterSchemaType] = None,
-        params: Optional[Dict[str, Any]] = {},
+        params: Optional[Dict[str, Any]] = None,
         response_model: Optional[Type[ModelType]] = None,
         **kwargs: Any,
     ) -> List[ModelType]:
+        if params is None:
+            params = {}
         if filters:
             params.update(filters.model_dump(exclude_unset=True))
 
