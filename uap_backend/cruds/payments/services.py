@@ -19,15 +19,14 @@ class ServicesCRUDService(
     async def get_by_name(
         self,
         name: str,
+        **kwargs
     ) -> ServiceResponse:
         """
         Get a service by its name.
         """
-        return await self._request(
-            method="GET",
-            endpoint="/",
-            params={"service_name": name},
-        )
+
+        services = await self.get_list(filters=ServiceFilterParams(name=name), limit=1, **kwargs)
+        return services[0]
 
 
 ServicesCRUDServiceInit = ServicesCRUDService()
