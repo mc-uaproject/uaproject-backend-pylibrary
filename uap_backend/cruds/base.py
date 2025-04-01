@@ -114,7 +114,7 @@ class BaseCRUD(Generic[ModelType, CreateSchemaType, UpdateSchemaType, FilterSche
         json: Optional[Dict[str, Any]] | BaseModel = None,
         response_model: Optional[Type[ModelType]] = None,
         is_list: bool = False,
-        _raise: bool = False,
+        _raise: bool = True,
     ) -> Union[ModelType, List[ModelType], None]:
         session = await self._get_session()
         url = f"{self.base_url}{endpoint}"
@@ -124,12 +124,13 @@ class BaseCRUD(Generic[ModelType, CreateSchemaType, UpdateSchemaType, FilterSche
 
         try:
             async with session.request(
-                method=method, url=url, params=params, json=json
-            ) as response:
+                        method=method, url=url, params=params, json=json
+                    ) as response:
+                data = await response.json()
                 if response.status == 404:
                     result = [] if is_list else None
                 elif response.status >= 400:
-                    raise APIError(await response.text(), status_code=response.status)
+                    raise RequestError(data.get("detail"), url, params)
                 else:
                     data = await response.json()
                     model = response_model or self.response_model
@@ -139,9 +140,9 @@ class BaseCRUD(Generic[ModelType, CreateSchemaType, UpdateSchemaType, FilterSche
                         else model.model_validate(data)
                     )
 
-                if _raise and (result is None or (is_list and not result)):
+                if _raise and not result:
                     raise RequestError(
-                        message=f"Empty or None response received\n```cs\n{data.get("details", None)}```",
+                        message=f"Empty or None response received\n```cs\n{data.get("detail", None)}```",
                         endpoint=url,
                         params=params,
                         original_error=None,
