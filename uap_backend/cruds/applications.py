@@ -20,10 +20,10 @@ class ApplicationCRUDService(
         super().__init__(cache_duration, "/applications")
 
     async def update_status(
-        self, application_id: Literal["me"] | int, status: ApplicationStatus
+        self, application_id: Literal["me"] | int, status: ApplicationStatus, **kwargs
     ) -> ApplicationResponse:
         """Update application status"""
-        return await self._request("POST", f"/{application_id}/status/{status.value}")
+        return await self._request("POST", f"/{application_id}/status/{status.value}", **kwargs)
 
 
 ApplicationCRUDServiceInit = ApplicationCRUDService()

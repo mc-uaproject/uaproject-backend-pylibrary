@@ -20,19 +20,18 @@ class UserCRUDService(BaseCRUD[UserResponse, UserCreate, UserUpdate, UserFilterP
     def __init__(self, cache_duration=300):
         super().__init__(cache_duration, "/users")
 
-    async def get_by_discord_id(self, user_id: int) -> Optional[UserResponse]:
+    async def get_by_discord_id(self, user_id: int, **kwargs) -> Optional[UserResponse]:
         """Get details of a specific user"""
 
-        users = await self.get_list(filters=UserFilterParams(discord_id=user_id))
-        if users:
-            return users[0]
+        users = await self.get_list(filters=UserFilterParams(discord_id=user_id), **kwargs)
+        return users[0]
 
-    async def get_by_nickname(self, nickname: str) -> Optional[UserResponse]:
+
+    async def get_by_nickname(self, nickname: str, **kwargs) -> Optional[UserResponse]:
         """Get details of a specific user"""
 
-        users = await self.get_list(filter=UserFilterParams(minecraft_nickname=nickname))
-        if users:
-            return users[0]
+        users = await self.get_list(filter=UserFilterParams(minecraft_nickname=nickname), **kwargs)
+        return users[0]
 
     async def search_by_nickname(
         self,

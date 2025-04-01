@@ -19,16 +19,18 @@ class WebhookCRUDService(
     def __init__(self, cache_duration=300):
         super().__init__(cache_duration, "/webhooks")
 
-    async def stream_webhooks(self, skip: int = 0, limit: int = 50) -> List[WebhookResponse]:
+    async def stream_webhooks(
+        self, skip: int = 0, limit: int = 50, **kwargs
+    ) -> List[WebhookResponse]:
         """Stream webhooks"""
         params = {"skip": skip, "limit": limit}
-        return await self.get("/stream", params=params, is_list=True)
+        return await self.get("/stream", params=params, is_list=True, **kwargs)
 
     async def update_webhook_status(
-        self, webhook_id: int, status: WebhookStatus
+        self, webhook_id: int, status: WebhookStatus, **kwargs
     ) -> WebhookResponse:
         """Update webhook status"""
-        return await self._request("POST", f"/{webhook_id}/status/{status}")
+        return await self._request("POST", f"/{webhook_id}/status/{status}", **kwargs)
 
 
 WebhookCRUDServiceInit = WebhookCRUDService()

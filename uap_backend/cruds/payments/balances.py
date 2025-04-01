@@ -1,4 +1,3 @@
-
 from uaproject_backend_schemas.payments.balances import (
     BalanceFilterParams,
     BalanceResponse,
@@ -14,9 +13,9 @@ class BalanceCRUDService(BaseCRUD[BalanceResponse, None, BalanceUpdate, BalanceF
     def __init__(self, cache_duration=300):
         super().__init__(cache_duration, "/payments/balances")
 
-    async def get_by_key(self, identifier: str) -> BalanceResponse:
+    async def get_by_key(self, identifier: str, **kwargs) -> BalanceResponse:
         """Get balance by key/identifier"""
-        return await self._request("GET", f"/key/{identifier}")
+        return await self._request("GET", f"/key/{identifier}", **kwargs)
 
 
 BalanceCRUDServiceInit = BalanceCRUDService()

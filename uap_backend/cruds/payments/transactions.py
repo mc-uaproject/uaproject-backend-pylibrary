@@ -20,15 +20,15 @@ class TransactionCRUDService(
         super().__init__(cache_duration, "/payments/transactions")
 
     async def get_transaction_statistics(
-        self, transaction_type: Optional[TransactionType] = None
+        self, transaction_type: Optional[TransactionType] = None, **kwargs
     ) -> Dict[str, Any]:
         """Get transaction statistics"""
         params = {"transaction_type": transaction_type} if transaction_type else {}
-        return await self._request("/statistics", params=params)
+        return await self._request("/statistics", params=params, **kwargs)
 
-    async def get_service_details(self, transaction_id: int) -> Dict[str, Any]:
+    async def get_service_details(self, transaction_id: int, **kwargs) -> Dict[str, Any]:
         """Get service details for a specific transaction"""
-        return await self.get(f"/details/{transaction_id}/service")
+        return await self.get(f"/details/{transaction_id}/service", **kwargs)
 
 
 TransactionCRUDServiceInit = TransactionCRUDService()

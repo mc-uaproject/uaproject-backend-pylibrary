@@ -16,16 +16,11 @@ class DonationCRUDService(
     def __init__(self, cache_duration=300):
         super().__init__(cache_duration, "/payments/donations")
 
-    async def get_statistics(
-        self,
-    ) -> dict:
+    async def get_statistics(self, **kwargs) -> dict:
         """
         Get statistics for donations.
         """
-        return await self._request(
-            method="GET",
-            endpoint="/statistics/summary",
-        )
+        return await self._request(method="GET", endpoint="/statistics/summary", **kwargs)
 
 
 DonationCRUDServiceInit = DonationCRUDService()

@@ -11,12 +11,13 @@ import aiohttp
 from pydantic import BaseModel
 
 from uap_backend.config import settings
-from uap_backend.exceptions import APIError
+from uap_backend.exceptions import APIError, RequestError
 
 ModelType = TypeVar("ModelType")
 CreateSchemaType = TypeVar("CreateSchemaType", bound=BaseModel)
 UpdateSchemaType = TypeVar("UpdateSchemaType", bound=BaseModel)
 FilterSchemaType = TypeVar("FilterSchemaType", bound=BaseModel)
+
 
 class DateTimeEncoder(JSONEncoder):
     def default(self, obj):
@@ -84,7 +85,7 @@ class BaseCRUD(Generic[ModelType, CreateSchemaType, UpdateSchemaType, FilterSche
                     "Content-Type": "application/json",
                     "Authorization": f"Bearer {settings.BACKEND_API_KEY}",
                 },
-                json_serialize=lambda obj: dumps(obj, cls=DateTimeEncoder)
+                json_serialize=lambda obj: dumps(obj, cls=DateTimeEncoder),
             )
         return self._session
 
@@ -113,6 +114,7 @@ class BaseCRUD(Generic[ModelType, CreateSchemaType, UpdateSchemaType, FilterSche
         json: Optional[Dict[str, Any]] | BaseModel = None,
         response_model: Optional[Type[ModelType]] = None,
         is_list: bool = False,
+        _raise: bool = False,
     ) -> Union[ModelType, List[ModelType], None]:
         session = await self._get_session()
         url = f"{self.base_url}{endpoint}"
@@ -125,35 +127,47 @@ class BaseCRUD(Generic[ModelType, CreateSchemaType, UpdateSchemaType, FilterSche
                 method=method, url=url, params=params, json=json
             ) as response:
                 if response.status == 404:
-                    return [] if is_list else None
+                    result = [] if is_list else None
                 elif response.status >= 400:
                     raise APIError(await response.text(), status_code=response.status)
+                else:
+                    data = await response.json()
+                    model = response_model or self.response_model
+                    result = (
+                        [model.model_validate(item) for item in data]
+                        if is_list
+                        else model.model_validate(data)
+                    )
 
-                data = await response.json()
-                model = response_model or self.response_model
+                if _raise and (result is None or (is_list and not result)):
+                    raise RequestError(
+                        message="Empty or None response received",
+                        endpoint=url,
+                        params=params,
+                        original_error=None,
+                    )
 
-                return (
-                    [model.model_validate(item) for item in data]
-                    if is_list
-                    else model.model_validate(data)
-                )
+                return result
+
         except aiohttp.ClientError as e:
             raise APIError(str(e)) from e
 
     async def clear_cache(self, key: Optional[str] = None):
         await SimpleCache.clear_cache(key)
 
-    async def create(self, data: CreateSchemaType) -> ModelType:
-        return await self._request("POST", "", json=data.model_dump(exclude_none=True))
+    async def create(self, data: CreateSchemaType, **kwargs) -> ModelType:
+        return await self._request("POST", "", json=data.model_dump(exclude_none=True), **kwargs)
 
-    async def update(self, id: Union[int, str], data: UpdateSchemaType) -> ModelType:
-        return await self._request("PATCH", f"/{id}", json=data.model_dump(exclude_none=True))
+    async def update(self, id: Union[int, str], data: UpdateSchemaType, **kwargs) -> ModelType:
+        return await self._request(
+            "PATCH", f"/{id}", json=data.model_dump(exclude_none=True), **kwargs
+        )
 
-    async def delete(self, id: Union[int, str]) -> ModelType:
-        return await self._request("DELETE", f"/{id}")
+    async def delete(self, id: Union[int, str], **kwargs) -> ModelType:
+        return await self._request("DELETE", f"/{id}", **kwargs)
 
-    async def get(self, id: Union[int, str]) -> ModelType:
-        return await self._request("GET", f"/{id}")
+    async def get(self, id: Union[int, str], **kwargs) -> ModelType:
+        return await self._request("GET", f"/{id}", **kwargs)
 
     async def get_by_user_id(
         self,
@@ -162,6 +176,7 @@ class BaseCRUD(Generic[ModelType, CreateSchemaType, UpdateSchemaType, FilterSche
         *,
         params: Optional[Dict[str, Any]] = None,
         response_model: Optional[Type[ModelType]] = None,
+        **kwargs,
     ) -> ModelType:
         endpoint = endpoint or f"/users/{user_id}"
         return await self._request(
@@ -169,6 +184,7 @@ class BaseCRUD(Generic[ModelType, CreateSchemaType, UpdateSchemaType, FilterSche
             endpoint,
             params=params or {"user_id": user_id},
             response_model=response_model,
+            **kwargs,
         )
 
     async def get_list(
@@ -178,6 +194,7 @@ class BaseCRUD(Generic[ModelType, CreateSchemaType, UpdateSchemaType, FilterSche
         filters: Optional[FilterSchemaType] = None,
         params: Optional[Dict[str, Any]] = None,
         response_model: Optional[Type[ModelType]] = None,
+        _raise: bool = False,
         **kwargs: Any,
     ) -> List[ModelType]:
         if params is None:
@@ -194,4 +211,5 @@ class BaseCRUD(Generic[ModelType, CreateSchemaType, UpdateSchemaType, FilterSche
             params=params,
             response_model=response_model,
             is_list=True,
+            _raise=_raise,
         )

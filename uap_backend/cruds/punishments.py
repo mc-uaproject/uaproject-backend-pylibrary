@@ -23,13 +23,15 @@ class PunishmentsCRUDService(
         self,
         punishment_id: Literal["me"] | int,
         status: PunishmentStatus,
+        **kwargs
     ) -> PunishmentResponse:
         """
         Update the status of a punishment.
         """
         return await self._request(
             method="POST",
-            endpoint=f"/{punishment_id}/status/{status}"
+            endpoint=f"/{punishment_id}/status/{status}",
+            **kwargs
         )
 
 
