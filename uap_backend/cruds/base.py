@@ -141,13 +141,16 @@ class BaseCRUD(Generic[ModelType, CreateSchemaType, UpdateSchemaType, FilterSche
 
                 if _raise and (result is None or (is_list and not result)):
                     raise RequestError(
-                        message="Empty or None response received",
+                        message=f"Empty or None response received\n```cs\n{data.get("details", None)}```",
                         endpoint=url,
                         params=params,
                         original_error=None,
                     )
 
                 return result
+
+        except RequestError as e:
+            raise e
 
         except aiohttp.ClientError as e:
             raise APIError(str(e)) from e
