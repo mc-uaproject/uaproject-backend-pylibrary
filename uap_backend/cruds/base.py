@@ -69,7 +69,7 @@ class BaseCRUD(Generic[ModelType, CreateSchemaType, UpdateSchemaType, FilterSche
 
     def __init__(
         self,
-        cache_duration: float = 300,
+        cache_duration: float = settings.CACHE_DURATION,
         prefix: str = "",
     ) -> None:
         self.prefix = prefix

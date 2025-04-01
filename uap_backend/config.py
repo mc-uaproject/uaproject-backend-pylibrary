@@ -14,6 +14,7 @@ class UAProjectAPISettings(BaseSettings):
 
     MAX_RETRIES: int = 3
     RETRY_DELAY: int = 5
+    CACHE_DURATION: float = 300
 
     class Config:
         env_file = ".env"
