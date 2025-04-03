@@ -44,6 +44,7 @@ class WebhookManager:
             )
 
         payload_dict = await request.json()
+        print(payload_dict)
         results = []
 
         for handler_info in handler_infos:
