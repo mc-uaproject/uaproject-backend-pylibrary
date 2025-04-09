@@ -198,7 +198,7 @@ class BaseCRUD(Generic[ModelType, CreateSchemaType, UpdateSchemaType, FilterSche
         filters: Optional[FilterSchemaType] = None,
         params: Optional[Dict[str, Any]] = None,
         response_model: Optional[Type[ModelType]] = None,
-        _raise: bool = False,
+        _raise: bool = True,
         **kwargs: Any,
     ) -> List[ModelType]:
         if params is None:
