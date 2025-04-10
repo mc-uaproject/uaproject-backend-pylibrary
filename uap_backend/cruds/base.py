@@ -124,8 +124,8 @@ class BaseCRUD(Generic[ModelType, CreateSchemaType, UpdateSchemaType, FilterSche
 
         try:
             async with session.request(
-                        method=method, url=url, params=params, json=json
-                    ) as response:
+                method=method, url=url, params=params, json=json
+            ) as response:
                 data = await response.json()
                 if response.status == 404:
                     result = [] if is_list else None
@@ -142,7 +142,7 @@ class BaseCRUD(Generic[ModelType, CreateSchemaType, UpdateSchemaType, FilterSche
 
                 if _raise and not result:
                     raise RequestError(
-                        message=f"Empty or None response received\n```cs\n{data.get("detail", None)}```",
+                        message=f"Empty or None response received\n```cs\n{data.get('detail', None)}```",
                         endpoint=url,
                         params=params,
                         original_error=None,
@@ -203,7 +203,8 @@ class BaseCRUD(Generic[ModelType, CreateSchemaType, UpdateSchemaType, FilterSche
     ) -> List[ModelType]:
         if params is None:
             params = {}
-        if filters:
+
+        if filters := kwargs.pop("filter", filters):
             params.update(filters.model_dump(exclude_unset=True))
 
         if kwargs:
