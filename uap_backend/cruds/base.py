@@ -141,6 +141,10 @@ class BaseCRUD(Generic[ModelType, CreateSchemaType, UpdateSchemaType, FilterSche
                     )
 
                 if _raise and not result:
+
+                    if isinstance(data, list) and data:
+                        data = data[0]
+
                     raise RequestError(
                         message=f"Empty or None response received\n```cs\n{data.get('detail', None)}```",
                         endpoint=url,
