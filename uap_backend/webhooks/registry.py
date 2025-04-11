@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from uaproject_backend_schemas.base import PayloadModels
 from uaproject_backend_schemas.webhooks import WebhookStatus
 
-from uap_backend.cruds.webhooks import WebhookCRUDServiceInit
+from uap_backend.cruds.webhooks import WebhookCRUDService
 from uap_backend.logger import get_logger
 
 T = TypeVar("T", bound=BaseModel)
@@ -132,7 +132,7 @@ class WebhookRegistry:
 
     @classmethod
     async def _ainclude_scopes_to_webhook(cls, scopes: List[str]):
-        webhook = await WebhookCRUDServiceInit.get("me")
+        webhook = await WebhookCRUDService().get("me")
 
         if not webhook:
             logger.warning("Cant find my webhook")
@@ -140,7 +140,7 @@ class WebhookRegistry:
 
         webhook.status = WebhookStatus.ACTIVE
         webhook.scopes.update(dict.fromkeys(scopes, True))
-        await WebhookCRUDServiceInit.update(webhook.id, webhook)
+        await WebhookCRUDService().update(webhook.id, webhook)
 
     @classmethod
     def _log_bound_handlers(cls, bound_handlers: List[tuple], instance_class_name: str):
