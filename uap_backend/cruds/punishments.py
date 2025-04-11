@@ -20,19 +20,11 @@ class PunishmentsCRUDService(
         super().__init__(cache_duration, "/punishments")
 
     async def update_status(
-        self,
-        punishment_id: Literal["me"] | int,
-        status: PunishmentStatus,
-        **kwargs
+        self, punishment_id: Literal["me"] | int, status: PunishmentStatus, **kwargs
     ) -> PunishmentResponse:
         """
         Update the status of a punishment.
         """
         return await self._request(
-            method="POST",
-            endpoint=f"/{punishment_id}/status/{status}",
-            **kwargs
+            method="POST", endpoint=f"/{punishment_id}/status/{status}", **kwargs
         )
-
-
-PunishmentsCRUDServiceInit = PunishmentsCRUDService()

@@ -17,6 +17,3 @@ class PurchasesCRUDService(
 
     def __init__(self, cache_duration=300):
         super().__init__(cache_duration, "/payments/purchases")
-
-
-PurchasesCRUDServiceInit = PurchasesCRUDService()

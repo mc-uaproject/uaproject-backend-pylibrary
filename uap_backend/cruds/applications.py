@@ -24,6 +24,3 @@ class ApplicationCRUDService(
     ) -> ApplicationResponse:
         """Update application status"""
         return await self._request("POST", f"/{application_id}/status/{status.value}", **kwargs)
-
-
-ApplicationCRUDServiceInit = ApplicationCRUDService()

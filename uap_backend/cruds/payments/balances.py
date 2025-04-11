@@ -16,6 +16,3 @@ class BalanceCRUDService(BaseCRUD[BalanceResponse, None, BalanceUpdate, BalanceF
     async def get_by_key(self, identifier: str, **kwargs) -> BalanceResponse:
         """Get balance by key/identifier"""
         return await self._request("GET", f"/key/{identifier}", **kwargs)
-
-
-BalanceCRUDServiceInit = BalanceCRUDService()

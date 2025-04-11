@@ -21,6 +21,3 @@ class DonationCRUDService(
         Get statistics for donations.
         """
         return await self._request(method="GET", endpoint="/statistics/summary", **kwargs)
-
-
-DonationCRUDServiceInit = DonationCRUDService()

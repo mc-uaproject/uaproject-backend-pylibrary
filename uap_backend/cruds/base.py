@@ -67,6 +67,17 @@ class SimpleCache:
 
 class BaseCRUD(Generic[ModelType, CreateSchemaType, UpdateSchemaType, FilterSchemaType]):
     response_model: Type[ModelType]
+    _instances: Dict[str, Any] = {}
+
+    def __new__(cls, *args, **kwargs):
+        key = f"{cls.__name__}:{args}:{sorted(kwargs.items())}"
+
+        if key not in cls._instances:
+            instance = super(BaseCRUD, cls).__new__(cls)
+            cls._instances[key] = instance
+            instance._initialized = False
+
+        return cls._instances[key]
 
     def __init__(
         self,
@@ -77,6 +88,11 @@ class BaseCRUD(Generic[ModelType, CreateSchemaType, UpdateSchemaType, FilterSche
         self.base_url: str = f"{settings.API_BASE_URL.rstrip('/')}{settings.API_PREFIX}{prefix}"
         self._session: Optional[aiohttp.ClientSession] = None
         self._cache_duration = cache_duration
+
+    @classmethod
+    def _instance(cls, *args, **kwargs):
+        """Get the singleton instance without reinitializing if it exists"""
+        return cls(*args, **kwargs)
 
     async def _get_session(self) -> aiohttp.ClientSession:
         if not self._session or self._session.closed:
@@ -93,7 +109,9 @@ class BaseCRUD(Generic[ModelType, CreateSchemaType, UpdateSchemaType, FilterSche
         if self._session and not self._session.closed:
             await self._session.close()
 
-    async def __aenter__(self) -> "BaseCRUD[ModelType]":
+    async def __aenter__(
+        self,
+    ) -> "BaseCRUD[ModelType, CreateSchemaType, UpdateSchemaType, FilterSchemaType]":
         return self
 
     async def __aexit__(
@@ -104,7 +122,6 @@ class BaseCRUD(Generic[ModelType, CreateSchemaType, UpdateSchemaType, FilterSche
     ) -> None:
         await self.close()
 
-    @SimpleCache.cached()
     async def _request(
         self,
         method: str,
@@ -141,7 +158,6 @@ class BaseCRUD(Generic[ModelType, CreateSchemaType, UpdateSchemaType, FilterSche
                     )
 
                 if _raise and not result:
-
                     if isinstance(data, list) and data:
                         data = data[0]
 

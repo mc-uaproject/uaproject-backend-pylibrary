@@ -26,7 +26,6 @@ class UserCRUDService(BaseCRUD[UserResponse, UserCreate, UserUpdate, UserFilterP
         users = await self.get_list(filters=UserFilterParams(discord_id=user_id), **kwargs)
         return users[0] if users else None
 
-
     async def get_by_nickname(self, nickname: str, **kwargs) -> Optional[UserResponse]:
         """Get details of a specific user"""
 
@@ -55,6 +54,3 @@ class UserCRUDService(BaseCRUD[UserResponse, UserCreate, UserUpdate, UserFilterP
                 "query": nickname,
             },
         )
-
-
-UserCRUDServiceInit = UserCRUDService()

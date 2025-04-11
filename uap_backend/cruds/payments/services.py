@@ -16,17 +16,10 @@ class ServicesCRUDService(
     def __init__(self, cache_duration=300):
         super().__init__(cache_duration, "/payments/services")
 
-    async def get_by_name(
-        self,
-        name: str,
-        **kwargs
-    ) -> ServiceResponse:
+    async def get_by_name(self, name: str, **kwargs) -> ServiceResponse:
         """
         Get a service by its name.
         """
 
         services = await self.get_list(filters=ServiceFilterParams(name=name), limit=1, **kwargs)
         return services[0]
-
-
-ServicesCRUDServiceInit = ServicesCRUDService()

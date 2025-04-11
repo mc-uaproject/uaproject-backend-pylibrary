@@ -29,6 +29,3 @@ class TransactionCRUDService(
     async def get_service_details(self, transaction_id: int, **kwargs) -> Dict[str, Any]:
         """Get service details for a specific transaction"""
         return await self.get(f"/details/{transaction_id}/service", **kwargs)
-
-
-TransactionCRUDServiceInit = TransactionCRUDService()

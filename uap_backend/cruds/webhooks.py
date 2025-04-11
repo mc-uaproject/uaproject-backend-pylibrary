@@ -31,6 +31,3 @@ class WebhookCRUDService(
     ) -> WebhookResponse:
         """Update webhook status"""
         return await self._request("POST", f"/{webhook_id}/status/{status}", **kwargs)
-
-
-WebhookCRUDServiceInit = WebhookCRUDService()
