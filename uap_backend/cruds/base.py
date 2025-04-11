@@ -96,7 +96,9 @@ class BaseCRUD(Generic[ModelType, CreateSchemaType, UpdateSchemaType, FilterSche
     @classmethod
     def _instance(cls, *args, **kwargs):
         """Get the singleton instance without reinitializing if it exists"""
-        return cls(*args, **kwargs)
+        key = f"{cls.__name__}:{args}:{sorted(kwargs.items()) if kwargs else ''}"
+
+        return cls._instances[key] if key in cls._instances else cls(*args, **kwargs)
 
     @classmethod
     async def close_all_sessions(cls):
