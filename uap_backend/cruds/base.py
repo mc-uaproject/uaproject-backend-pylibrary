@@ -68,9 +68,11 @@ class SimpleCache:
 class BaseCRUD(Generic[ModelType, CreateSchemaType, UpdateSchemaType, FilterSchemaType]):
     response_model: Type[ModelType]
     _instances: Dict[str, Any] = {}
+    _all_sessions: List[aiohttp.ClientSession] = []
+    _session_lock = asyncio.Lock()
 
     def __new__(cls, *args, **kwargs):
-        key = f"{cls.__name__}:{args}:{sorted(kwargs.items())}"
+        key = f"{cls.__name__}:{args}:{sorted(kwargs.items()) if kwargs else ''}"
 
         if key not in cls._instances:
             instance = super(BaseCRUD, cls).__new__(cls)
@@ -84,30 +86,47 @@ class BaseCRUD(Generic[ModelType, CreateSchemaType, UpdateSchemaType, FilterSche
         cache_duration: float = settings.CACHE_DURATION,
         prefix: str = "",
     ) -> None:
-        self.prefix = prefix
-        self.base_url: str = f"{settings.API_BASE_URL.rstrip('/')}{settings.API_PREFIX}{prefix}"
-        self._session: Optional[aiohttp.ClientSession] = None
-        self._cache_duration = cache_duration
+        if not hasattr(self, "_initialized") or not self._initialized:
+            self.prefix = prefix
+            self.base_url: str = f"{settings.API_BASE_URL.rstrip('/')}{settings.API_PREFIX}{prefix}"
+            self._session: Optional[aiohttp.ClientSession] = None
+            self._cache_duration = cache_duration
+            self._initialized = True
 
     @classmethod
     def _instance(cls, *args, **kwargs):
         """Get the singleton instance without reinitializing if it exists"""
         return cls(*args, **kwargs)
 
+    @classmethod
+    async def close_all_sessions(cls):
+        """Close all sessions created by any BaseCRUD instance"""
+        async with cls._session_lock:
+            for session in cls._all_sessions:
+                if not session.closed:
+                    await session.close()
+            cls._all_sessions.clear()
+
     async def _get_session(self) -> aiohttp.ClientSession:
-        if not self._session or self._session.closed:
-            self._session = aiohttp.ClientSession(
-                headers={
-                    "Content-Type": "application/json",
-                    "Authorization": f"Bearer {settings.BACKEND_API_KEY}",
-                },
-                json_serialize=lambda obj: dumps(obj, cls=DateTimeEncoder),
-            )
-        return self._session
+        async with self.__class__._session_lock:
+            if not self._session or self._session.closed:
+                self._session = aiohttp.ClientSession(
+                    headers={
+                        "Content-Type": "application/json",
+                        "Authorization": f"Bearer {settings.BACKEND_API_KEY}",
+                    },
+                    json_serialize=lambda obj: dumps(obj, cls=DateTimeEncoder),
+                )
+                self.__class__._all_sessions.append(self._session)
+            return self._session
 
     async def close(self) -> None:
         if self._session and not self._session.closed:
             await self._session.close()
+            async with self.__class__._session_lock:
+                if self._session in self.__class__._all_sessions:
+                    self.__class__._all_sessions.remove(self._session)
+            self._session = None
 
     async def __aenter__(
         self,
@@ -149,7 +168,6 @@ class BaseCRUD(Generic[ModelType, CreateSchemaType, UpdateSchemaType, FilterSche
                 elif response.status >= 400:
                     raise RequestError(data.get("detail"), url, params)
                 else:
-                    data = await response.json()
                     model = response_model or self.response_model
                     result = (
                         [model.model_validate(item) for item in data]

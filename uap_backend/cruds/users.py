@@ -11,7 +11,7 @@ from uaproject_backend_schemas.users import (
 
 from uap_backend.cruds.base import BaseCRUD
 
-__all__ = ["UserCRUDService", "UserCRUDServiceInit"]
+__all__ = ["UserCRUDService"]
 
 
 class UserCRUDService(BaseCRUD[UserResponse, UserCreate, UserUpdate, UserFilterParams]):
