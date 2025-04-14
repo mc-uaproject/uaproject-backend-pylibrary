@@ -2,6 +2,7 @@ from typing import Optional
 
 from uaproject_backend_schemas import SortOrder
 from uaproject_backend_schemas.users import (
+    SearchMode,
     UserCreate,
     UserFilterParams,
     UserResponse,
@@ -35,22 +36,29 @@ class UserCRUDService(BaseCRUD[UserResponse, UserCreate, UserUpdate, UserFilterP
     async def search_by_nickname(
         self,
         nickname: str,
-        similar: int = 0.75,
+        similar: Optional[float] = None,
         skip: int = 0,
         limit: int = 10,
         sort_by: UserSort = UserSort.CREATED_AT,
         order: SortOrder = SortOrder.ASC,
         filters: Optional[UserFilterParams] = None,
+        search_mode: Optional[SearchMode] = None,
     ):
+        params = {
+            "skip": skip,
+            "limit": limit,
+            "sort_by": sort_by,
+            "order": order,
+            "query": nickname,
+        }
+
+        if search_mode == SearchMode.ANY:
+            params["search_mode"] = search_mode
+        elif similar is not None:
+            params["similar"] = similar
+
         return await self.get_list(
             "/list/search",
             filters=filters,
-            params={
-                "similar": similar,
-                "skip": skip,
-                "limit": limit,
-                "sort_by": sort_by,
-                "order": order,
-                "query": nickname,
-            },
+            params=params,
         )
