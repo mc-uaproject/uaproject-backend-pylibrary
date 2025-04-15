@@ -8,6 +8,7 @@ from pydantic import BaseModel
 from uaproject_backend_schemas.base import PayloadModels
 from uaproject_backend_schemas.webhooks import WebhookStatus
 
+from uap_backend.config import settings
 from uap_backend.cruds.webhooks import WebhookCRUDService
 from uap_backend.logger import get_logger
 
@@ -140,6 +141,11 @@ class WebhookRegistry:
 
         webhook.status = WebhookStatus.ACTIVE
         webhook.scopes.update(dict.fromkeys(scopes, True))
+
+        if webhook.authorization != settings.CALLBACK_SECRET:
+            logger.info("Updating webhook authorization token")
+            webhook.authorization = settings.CALLBACK_SECRET
+
         await WebhookCRUDService().update(webhook.id, webhook)
 
     @classmethod

@@ -1,14 +1,18 @@
 from typing import Any, Dict, Optional
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel
 from uaproject_backend_schemas.base import BothPayloadBaseModel, PayloadModels
 
+from uap_backend.config import settings
 from uap_backend.logger import get_logger
 
 from .registry import WebhookRegistry
 
 logger = get_logger(__name__)
+
+security = HTTPBearer()
 
 
 class WebhookHandlerResponse(BaseModel):
@@ -32,7 +36,13 @@ class WebhookManager:
 
     def _setup_webhook_handler(self) -> None:
         @self.app.post("/webhook", response_model=WebhookHandlerResponse)
-        async def webhook_handler(data: PayloadModels, request: Request) -> WebhookHandlerResponse:
+        async def webhook_handler(
+            data: PayloadModels,
+            request: Request,
+            credentials: HTTPAuthorizationCredentials = Depends(security),
+        ) -> WebhookHandlerResponse:
+            if credentials.credentials != settings.CALLBACK_SECRET:
+                raise HTTPException(status_code=401, detail="Invalid authorization token")
             return await self.handle_webhook(data, request)
 
     async def handle_webhook(self, data: PayloadModels, request: Request) -> WebhookHandlerResponse:
