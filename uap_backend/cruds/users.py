@@ -18,8 +18,8 @@ __all__ = ["UserCRUDService"]
 class UserCRUDService(BaseCRUD[UserResponse, UserCreate, UserUpdate, UserFilterParams]):
     response_model = UserResponse
 
-    def __init__(self, cache_duration=300):
-        super().__init__(cache_duration, "/users")
+    def __init__(self):
+        super().__init__("/users")
 
     async def get_by_discord_id(self, user_id: int, **kwargs) -> Optional[UserResponse]:
         """Get details of a specific user"""

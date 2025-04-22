@@ -13,8 +13,8 @@ class ServicesCRUDService(
 ):
     response_model = ServiceResponse
 
-    def __init__(self, cache_duration=300):
-        super().__init__(cache_duration, "/payments/services")
+    def __init__(self):
+        super().__init__("/payments/services")
 
     async def get_by_name(self, name: str, **kwargs) -> ServiceResponse:
         """

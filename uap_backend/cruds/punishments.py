@@ -16,8 +16,8 @@ class PunishmentsCRUDService(
 ):
     response_model = PunishmentResponse
 
-    def __init__(self, cache_duration=300):
-        super().__init__(cache_duration, "/punishments")
+    def __init__(self):
+        super().__init__("/punishments")
 
     async def update_status(
         self, punishment_id: Literal["me"] | int, status: PunishmentStatus, **kwargs

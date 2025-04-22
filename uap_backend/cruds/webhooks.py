@@ -16,8 +16,8 @@ class WebhookCRUDService(
 ):
     response_model = WebhookResponse
 
-    def __init__(self, cache_duration=300):
-        super().__init__(cache_duration, "/webhooks")
+    def __init__(self):
+        super().__init__("/webhooks")
 
     async def stream_webhooks(
         self, skip: int = 0, limit: int = 50, **kwargs

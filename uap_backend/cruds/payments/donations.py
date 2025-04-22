@@ -13,8 +13,8 @@ class DonationCRUDService(
 ):
     response_model = DonationResponse
 
-    def __init__(self, cache_duration=300):
-        super().__init__(cache_duration, "/payments/donations")
+    def __init__(self):
+        super().__init__("/payments/donations")
 
     async def get_statistics(self, **kwargs) -> dict:
         """
