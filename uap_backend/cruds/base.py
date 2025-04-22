@@ -83,8 +83,8 @@ class BaseCRUD(Generic[ModelType, CreateSchemaType, UpdateSchemaType, FilterSche
 
     def __init__(
         self,
-        cache_duration: float = settings.CACHE_DURATION,
         prefix: str = "",
+        cache_duration: float = settings.CACHE_DURATION,
     ) -> None:
         if not hasattr(self, "_initialized") or not self._initialized:
             self.prefix = prefix
