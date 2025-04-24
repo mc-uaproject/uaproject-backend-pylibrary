@@ -14,11 +14,18 @@ jobs:
         uses: stegzilla/discord-notify@v2
         with:
           webhook_url: ${{ secrets.DISCORD_WEBHOOK_URL }}
-          title: New PR Event
+          title: |
+            ${{ github.event_name == 'pull_request' && 'PR Event' || 'Push to Main' }}
           message: |
-            **Event:** ${{ github.event_name }}
-            **${{ github.event.pull_request.title || github.event.head_commit.message }}**
-            **Creator:** ${{ github.event.pull_request.user.login || github.event.pusher.name }}
+            **Repository:** [${{ github.repository }}](https://github.com/${{ github.repository }})
+            ${{ github.event_name == 'pull_request' && format('**PR #{0}**', github.event.pull_request.number) || '' }}
+            **Title:** ${{ github.event.pull_request.title || github.event.head_commit.message }}
+            **Author:** ${{ github.event.pull_request.user.login || github.event.pusher.name }}
+            **Branch:** ${{ github.event.pull_request.head.ref || github.ref_name }}
+            **Status:** ${{ github.event.pull_request.state || 'Push' }}
+            **Changes:** ${{ github.event.pull_request.changed_files || 'N/A' }} files changed
+            **Description:**
+            ${{ github.event.pull_request.body || 'N/A' }}
             [View on GitHub](${{ github.event.pull_request.html_url || github.event.head_commit.url }})
           include_image: true
           avatar_url: https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png
