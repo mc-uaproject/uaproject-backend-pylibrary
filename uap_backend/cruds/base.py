@@ -181,8 +181,13 @@ class BaseCRUD(Generic[ModelType, CreateSchemaType, UpdateSchemaType, FilterSche
                     if isinstance(data, list) and data:
                         data = data[0]
 
+                    error_message = (
+                        data.get('detail', None) if isinstance(data, dict)
+                        else str(data)
+                    )
+
                     raise RequestError(
-                        message=f"Empty or None response received\n```cs\n{data.get('detail', None)}```",
+                        message=f"Empty or None response received\n```cs\n{error_message}```",
                         endpoint=url,
                         params=params,
                         original_error=None,
