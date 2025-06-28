@@ -14,7 +14,7 @@ class DonationCRUDService(
     response_model = DonationResponse
 
     def __init__(self):
-        super().__init__("/payments/donations")
+        super().__init__("/donations")
 
     async def get_statistics(self, **kwargs) -> dict:
         """

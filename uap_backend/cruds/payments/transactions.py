@@ -17,7 +17,7 @@ class TransactionCRUDService(
     response_model = TransactionResponse
 
     def __init__(self):
-        super().__init__("/payments/transactions")
+        super().__init__("/transactions")
 
     async def get_transaction_statistics(
         self, transaction_type: Optional[TransactionType] = None, **kwargs

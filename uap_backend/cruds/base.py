@@ -5,18 +5,19 @@ from functools import wraps
 from json import JSONEncoder, dumps
 from time import time
 from types import TracebackType
-from typing import Any, Dict, Generic, List, Optional, Type, TypeVar, Union
+from typing import Any, Dict, Generic, List, Optional, Type, Union
 
 import aiohttp
 from pydantic import BaseModel
+from uaproject_backend_schemas.base import (
+    CreateSchemaType,
+    FilterSchemaType,
+    ModelType,
+    UpdateSchemaType,
+)
 
 from uap_backend.config import settings
 from uap_backend.exceptions import APIError, RequestError
-
-ModelType = TypeVar("ModelType")
-CreateSchemaType = TypeVar("CreateSchemaType", bound=BaseModel)
-UpdateSchemaType = TypeVar("UpdateSchemaType", bound=BaseModel)
-FilterSchemaType = TypeVar("FilterSchemaType", bound=BaseModel)
 
 
 class DateTimeEncoder(JSONEncoder):
@@ -182,8 +183,7 @@ class BaseCRUD(Generic[ModelType, CreateSchemaType, UpdateSchemaType, FilterSche
                         data = data[0]
 
                     error_message = (
-                        data.get('detail', None) if isinstance(data, dict)
-                        else str(data)
+                        data.get("detail", None) if isinstance(data, dict) else str(data)
                     )
 
                     raise RequestError(

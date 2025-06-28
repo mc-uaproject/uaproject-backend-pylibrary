@@ -10,7 +10,7 @@ python = "^3.12"
 pydantic-settings = "^2.7.1"
 aiohttp = "^3.11.11"
 fastapi = "^0.115.8"
-uaproject-backend-schemas = {git = "https://github.com/mc-uaproject/uaproject-backend-schemas"}
+uaproject-backend-schemas = {git = "https://github.com/mc-uaproject/uaproject-backend-schemas.git", rev = "v2"}
 
 
 [build-system]
@@ -18,9 +18,9 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.ruff]
-select = ["E", "F", "W", "C", "I"]
+lint.select = ["E", "F", "W", "C", "I"]
 exclude = ["venv", "__pycache__", "versions"]
-ignore = ["E501", "B010", "B022", "B028", "B904"]
+lint.ignore = ["E501", "B010", "B022", "B028", "B904"]
 line-length = 100
 
 [tool.vulture]

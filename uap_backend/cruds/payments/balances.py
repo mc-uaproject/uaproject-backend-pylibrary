@@ -11,7 +11,7 @@ class BalanceCRUDService(BaseCRUD[BalanceResponse, None, BalanceUpdate, BalanceF
     response_model = BalanceResponse
 
     def __init__(self):
-        super().__init__("/payments/balances")
+        super().__init__("/balances")
 
     async def get_by_key(self, identifier: str, **kwargs) -> BalanceResponse:
         """Get balance by key/identifier"""
