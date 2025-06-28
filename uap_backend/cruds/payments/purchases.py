@@ -16,4 +16,4 @@ class PurchasesCRUDService(
     response_model = PurchasedItemResponse
 
     def __init__(self):
-        super().__init__("/payments/purchases")
+        super().__init__("/purchases")
