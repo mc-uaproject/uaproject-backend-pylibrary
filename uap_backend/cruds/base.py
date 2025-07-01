@@ -1,265 +1,248 @@
-import asyncio
-from datetime import datetime
-from decimal import Decimal
-from functools import wraps
-from json import JSONEncoder, dumps
-from time import time
-from types import TracebackType
-from typing import Any, Dict, Generic, List, Optional, Type, TypeVar, Union
+"""Enhanced BaseCRUD following backend patterns without caching"""
 
-import aiohttp
-from pydantic import BaseModel
+import logging
+from typing import Any, Dict, Generic, List, Optional, Type, Union
 
-from uap_backend.config import settings
-from uap_backend.exceptions import APIError, RequestError
+from uaproject_backend_schemas.base import (
+    CreateSchemaType,
+    FilterSchemaType,
+    ModelType,
+    UpdateSchemaType,
+)
 
-ModelType = TypeVar("ModelType")
-CreateSchemaType = TypeVar("CreateSchemaType", bound=BaseModel)
-UpdateSchemaType = TypeVar("UpdateSchemaType", bound=BaseModel)
-FilterSchemaType = TypeVar("FilterSchemaType", bound=BaseModel)
+from uap_backend.core.client import HTTPClient
+from uap_backend.core.errors import CRUDNotFoundError, CRUDValidationError
 
-
-class DateTimeEncoder(JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, datetime):
-            return obj.isoformat()
-        elif isinstance(obj, Decimal):
-            return float(obj)
-        return super().default(obj)
-
-
-class SimpleCache:
-    _cache: Dict[str, Any] = {}
-    _cache_lock = asyncio.Lock()
-
-    @classmethod
-    def cached(cls, cache_key: Optional[str] = None, duration: float = 300):
-        def decorator(func):
-            @wraps(func)
-            async def wrapper(*args, **kwargs):
-                key = cache_key or f"{func.__module__}.{func.__name__}:{args}:{kwargs}"
-                async with cls._cache_lock:
-                    cached_result = cls._cache.get(key)
-                    if cached_result:
-                        result, expiration = cached_result
-                        if expiration > time():
-                            return result
-
-                result = await func(*args, **kwargs)
-
-                async with cls._cache_lock:
-                    cls._cache[key] = (result, time() + duration)
-
-                return result
-
-            return wrapper
-
-        return decorator
-
-    @classmethod
-    async def clear_cache(cls, key: Optional[str] = None):
-        async with cls._cache_lock:
-            if key:
-                cls._cache.pop(key, None)
-            else:
-                cls._cache.clear()
+logger = logging.getLogger(__name__)
 
 
 class BaseCRUD(Generic[ModelType, CreateSchemaType, UpdateSchemaType, FilterSchemaType]):
-    response_model: Type[ModelType]
-    _instances: Dict[str, Any] = {}
-    _all_sessions: List[aiohttp.ClientSession] = []
-    _session_lock = asyncio.Lock()
+    """Enhanced BaseCRUD with singleton pattern like backend"""
+
+    # Singleton pattern - use class type as key (like backend)
+    _instances: Dict[Type, "BaseCRUD"] = {}
 
     def __new__(cls, *args, **kwargs):
-        key = f"{cls.__name__}:{args}:{sorted(kwargs.items()) if kwargs else ''}"
+        """Singleton pattern implementation like backend BaseCRUD"""
+        if cls in cls._instances:
+            return cls._instances[cls]
 
-        if key not in cls._instances:
-            instance = super(BaseCRUD, cls).__new__(cls)
-            cls._instances[key] = instance
-            instance._initialized = False
+        instance = super().__new__(cls)
+        cls._instances[cls] = instance
+        return instance
 
-        return cls._instances[key]
+    def __init__(self, endpoint: str = "", model_name: str = ""):
+        """Initialize CRUD service"""
+        if hasattr(self, "_initialized") and self._initialized:
+            return
 
-    def __init__(
+        self.endpoint = endpoint.rstrip("/")
+        self.model_name = model_name or self.__class__.__name__.replace("CRUDService", "").lower()
+        self._client: Optional[HTTPClient] = None
+        self._initialized = True
+
+        logger.debug(f"Initialized {self.__class__.__name__} for endpoint: {self.endpoint}")
+
+    @property
+    def client(self) -> HTTPClient:
+        """Get or create HTTP client"""
+        if self._client is None:
+            self._client = HTTPClient()
+        return self._client
+
+    def _build_endpoint(self, path: str = "") -> str:
+        """Build full endpoint path"""
+        if path.startswith("/"):
+            return path  # Absolute path
+
+        base = self.endpoint
+        if path:
+            base = f"{base.rstrip('/')}/{path.lstrip('/')}"
+        return base
+
+    def _prepare_filters(
+        self, filters: Optional[FilterSchemaType] = None, **kwargs
+    ) -> Dict[str, Any]:
+        """Prepare query parameters from filters"""
+        params = {}
+
+        if filters:
+            if hasattr(filters, "model_dump"):
+                params.update(filters.model_dump(exclude_unset=True, exclude_none=True))
+            elif isinstance(filters, dict):
+                params.update(filters)
+
+        # Add additional params
+        params.update(kwargs)
+
+        # Remove None values
+        return {k: v for k, v in params.items() if v is not None}
+
+    def _prepare_data(
+        self, data: Union[CreateSchemaType, UpdateSchemaType, Dict[str, Any]]
+    ) -> Dict[str, Any]:
+        """Prepare request data"""
+        if hasattr(data, "model_dump"):
+            return data.model_dump(exclude_unset=True, exclude_none=True)
+        elif isinstance(data, dict):
+            return data
+        else:
+            raise CRUDValidationError(f"Invalid data type: {type(data)}")
+
+    # CRUD Operations
+    async def get(self, obj_id: Union[int, str], **kwargs) -> Dict[str, Any]:
+        """Get single object by ID"""
+        endpoint = self._build_endpoint(str(obj_id))
+
+        try:
+            return await self.client.get(endpoint, **kwargs)
+        except Exception as e:
+            if "404" in str(e) or "not found" in str(e).lower():
+                raise CRUDNotFoundError(self.model_name, obj_id)
+            raise
+
+    async def get_many(
+        self, filters: Optional[FilterSchemaType] = None, skip: int = 0, limit: int = 50, **kwargs
+    ) -> List[Dict[str, Any]]:
+        """Get multiple objects with filtering and pagination"""
+        params = self._prepare_filters(filters, skip=skip, limit=limit, **kwargs)
+        endpoint = self._build_endpoint()
+
+        response = await self.client.get(endpoint, params=params)
+
+        # Handle different response formats
+        if isinstance(response, list):
+            return response
+        elif isinstance(response, dict):
+            # Handle paginated response
+            return response.get("items", response.get("data", [response]))
+        else:
+            return []
+
+    async def create(
+        self, data: Union[CreateSchemaType, Dict[str, Any]], **kwargs
+    ) -> Dict[str, Any]:
+        """Create new object"""
+        endpoint = self._build_endpoint()
+        prepared_data = self._prepare_data(data)
+
+        return await self.client.post(endpoint, data=prepared_data, **kwargs)
+
+    async def update(
+        self, obj_id: Union[int, str], data: Union[UpdateSchemaType, Dict[str, Any]], **kwargs
+    ) -> Dict[str, Any]:
+        """Update existing object"""
+        endpoint = self._build_endpoint(str(obj_id))
+        prepared_data = self._prepare_data(data)
+
+        try:
+            return await self.client.patch(endpoint, data=prepared_data, **kwargs)
+        except Exception as e:
+            if "404" in str(e) or "not found" in str(e).lower():
+                raise CRUDNotFoundError(self.model_name, obj_id)
+            raise
+
+    async def delete(self, obj_id: Union[int, str], **kwargs) -> bool:
+        """Delete object by ID"""
+        endpoint = self._build_endpoint(str(obj_id))
+
+        try:
+            await self.client.delete(endpoint, **kwargs)
+            return True
+        except Exception as e:
+            if "404" in str(e) or "not found" in str(e).lower():
+                raise CRUDNotFoundError(self.model_name, obj_id)
+            raise
+
+    # Helper methods
+    async def exists(self, obj_id: Union[int, str]) -> bool:
+        """Check if object exists"""
+        try:
+            await self.get(obj_id)
+            return True
+        except CRUDNotFoundError:
+            return False
+
+    async def count(self, filters: Optional[FilterSchemaType] = None, **kwargs) -> int:
+        """Count objects matching filters"""
+        params = self._prepare_filters(filters, **kwargs)
+        endpoint = self._build_endpoint("count")
+
+        try:
+            response = await self.client.get(endpoint, params=params)
+            if isinstance(response, dict):
+                return response.get("count", 0)
+            return int(response)
+        except Exception:
+            # Fallback: get all and count
+            items = await self.get_many(filters=filters, limit=1000, **kwargs)
+            return len(items)
+
+    # Advanced operations
+    async def bulk_create(
+        self, data_list: List[Union[CreateSchemaType, Dict[str, Any]]], **kwargs
+    ) -> List[Dict[str, Any]]:
+        """Create multiple objects"""
+        endpoint = self._build_endpoint("bulk")
+        prepared_data = [self._prepare_data(data) for data in data_list]
+
+        return await self.client.post(endpoint, data={"items": prepared_data}, **kwargs)
+
+    async def bulk_update(
         self,
-        prefix: str = "",
-        cache_duration: float = settings.CACHE_DURATION,
-    ) -> None:
-        if not hasattr(self, "_initialized") or not self._initialized:
-            self.prefix = prefix
-            self.base_url: str = f"{settings.API_BASE_URL.rstrip('/')}{settings.API_PREFIX}{prefix}"
-            self._session: Optional[aiohttp.ClientSession] = None
-            self._cache_duration = cache_duration
-            self._initialized = True
+        updates: List[Dict[str, Any]],  # [{"id": 1, "data": {...}}, ...]
+        **kwargs,
+    ) -> List[Dict[str, Any]]:
+        """Update multiple objects"""
+        endpoint = self._build_endpoint("bulk")
 
-    @classmethod
-    def _instance(cls, *args, **kwargs):
-        """Get the singleton instance without reinitializing if it exists"""
-        key = f"{cls.__name__}:{args}:{sorted(kwargs.items()) if kwargs else ''}"
+        return await self.client.patch(endpoint, data={"items": updates}, **kwargs)
 
-        return cls._instances[key] if key in cls._instances else cls(*args, **kwargs)
+    async def bulk_delete(self, obj_ids: List[Union[int, str]], **kwargs) -> bool:
+        """Delete multiple objects"""
+        endpoint = self._build_endpoint("bulk")
 
-    @classmethod
-    async def close_all_sessions(cls):
-        """Close all sessions created by any BaseCRUD instance"""
-        async with cls._session_lock:
-            for session in cls._all_sessions:
-                if not session.closed:
-                    await session.close()
-            cls._all_sessions.clear()
+        await self.client.delete(endpoint, data={"ids": obj_ids}, **kwargs)
+        return True
 
-    async def _get_session(self) -> aiohttp.ClientSession:
-        async with self.__class__._session_lock:
-            if not self._session or self._session.closed:
-                self._session = aiohttp.ClientSession(
-                    headers={
-                        "Content-Type": "application/json",
-                        "Authorization": f"Bearer {settings.BACKEND_API_KEY}",
-                    },
-                    json_serialize=lambda obj: dumps(obj, cls=DateTimeEncoder),
-                )
-                self.__class__._all_sessions.append(self._session)
-            return self._session
-
-    async def close(self) -> None:
-        if self._session and not self._session.closed:
-            await self._session.close()
-            async with self.__class__._session_lock:
-                if self._session in self.__class__._all_sessions:
-                    self.__class__._all_sessions.remove(self._session)
-            self._session = None
-
-    async def __aenter__(
-        self,
-    ) -> "BaseCRUD[ModelType, CreateSchemaType, UpdateSchemaType, FilterSchemaType]":
-        return self
-
-    async def __aexit__(
-        self,
-        exc_type: Optional[Type[BaseException]],
-        exc_val: Optional[BaseException],
-        exc_tb: Optional[TracebackType],
-    ) -> None:
-        await self.close()
-
+    # Custom request method for specific endpoints
     async def _request(
         self,
         method: str,
-        endpoint: str,
-        *,
+        path: str = "",
+        data: Optional[Dict[str, Any]] = None,
         params: Optional[Dict[str, Any]] = None,
-        json: Optional[Dict[str, Any]] | BaseModel = None,
-        response_model: Optional[Type[ModelType]] = None,
-        is_list: bool = False,
-        _raise: bool = True,
-    ) -> Union[ModelType, List[ModelType], None]:
-        session = await self._get_session()
-        url = f"{self.base_url}{endpoint}"
-
-        if isinstance(json, BaseModel):
-            json = json.model_dump(exclude_unset=True)
-
-        try:
-            async with session.request(
-                method=method, url=url, params=params, json=json
-            ) as response:
-                data = await response.json()
-                if response.status == 404:
-                    result = [] if is_list else None
-                elif response.status >= 400:
-                    raise RequestError(data.get("detail"), url, params)
-                else:
-                    model = response_model or self.response_model
-                    result = (
-                        [model.model_validate(item) for item in data]
-                        if is_list
-                        else model.model_validate(data)
-                    )
-
-                if _raise and not result:
-                    if isinstance(data, list) and data:
-                        data = data[0]
-
-                    error_message = (
-                        data.get('detail', None) if isinstance(data, dict)
-                        else str(data)
-                    )
-
-                    raise RequestError(
-                        message=f"Empty or None response received\n```cs\n{error_message}```",
-                        endpoint=url,
-                        params=params,
-                        original_error=None,
-                    )
-
-                return result
-
-        except RequestError as e:
-            raise e
-
-        except aiohttp.ClientError as e:
-            raise APIError(str(e)) from e
-
-    async def clear_cache(self, key: Optional[str] = None):
-        await SimpleCache.clear_cache(key)
-
-    async def create(self, data: CreateSchemaType, **kwargs) -> ModelType:
-        return await self._request("POST", "", json=data.model_dump(exclude_none=True), **kwargs)
-
-    async def update(self, id: Union[int, str], data: UpdateSchemaType, **kwargs) -> ModelType:
-        return await self._request(
-            "PATCH", f"/{id}", json=data.model_dump(exclude_none=True), **kwargs
-        )
-
-    async def delete(self, id: Union[int, str], **kwargs) -> ModelType:
-        return await self._request("DELETE", f"/{id}", **kwargs)
-
-    async def get(self, id: Union[int, str], **kwargs) -> ModelType:
-        return await self._request("GET", f"/{id}", **kwargs)
-
-    async def get_by_user_id(
-        self,
-        user_id: Union[int, str],
-        endpoint: Optional[str] = None,
-        *,
-        params: Optional[Dict[str, Any]] = None,
-        response_model: Optional[Type[ModelType]] = None,
         **kwargs,
-    ) -> ModelType:
-        endpoint = endpoint or f"/users/{user_id}"
-        return await self._request(
-            "GET",
-            endpoint,
-            params=params or {"user_id": user_id},
-            response_model=response_model,
-            **kwargs,
-        )
+    ) -> Dict[str, Any]:
+        """Make custom request to specific endpoint"""
+        endpoint = self._build_endpoint(path)
 
-    async def get_list(
-        self,
-        endpoint: str = "",
-        *,
-        filters: Optional[FilterSchemaType] = None,
-        params: Optional[Dict[str, Any]] = None,
-        response_model: Optional[Type[ModelType]] = None,
-        _raise: bool = True,
-        **kwargs: Any,
-    ) -> List[ModelType]:
-        if params is None:
-            params = {}
+        if method.upper() == "GET":
+            return await self.client.get(endpoint, params=params, **kwargs)
+        elif method.upper() == "POST":
+            return await self.client.post(endpoint, data=data, params=params, **kwargs)
+        elif method.upper() == "PUT":
+            return await self.client.put(endpoint, data=data, params=params, **kwargs)
+        elif method.upper() == "PATCH":
+            return await self.client.patch(endpoint, data=data, params=params, **kwargs)
+        elif method.upper() == "DELETE":
+            return await self.client.delete(endpoint, params=params, **kwargs)
+        else:
+            raise CRUDValidationError(f"Unsupported HTTP method: {method}")
 
-        if filters := kwargs.pop("filter", filters):
-            params.update(filters.model_dump(exclude_unset=True))
+    # Resource cleanup
+    async def close(self):
+        """Close HTTP client"""
+        if self._client:
+            await self._client.close()
+            self._client = None
 
-        if kwargs:
-            params.update(kwargs)
+    async def __aenter__(self):
+        return self
 
-        return await self._request(
-            "GET",
-            endpoint,
-            params=params,
-            response_model=response_model,
-            is_list=True,
-            _raise=_raise,
-        )
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        await self.close()
+
+    def get_model_name(self) -> str:
+        """Get model name for debugging"""
+        return self.model_name

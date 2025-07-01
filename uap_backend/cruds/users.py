@@ -1,36 +1,41 @@
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
-from uaproject_backend_schemas import SortOrder
-from uaproject_backend_schemas.users import (
-    SearchMode,
-    UserCreate,
-    UserFilterParams,
-    UserResponse,
-    UserSort,
-    UserUpdate,
-)
+from uaproject_backend_schemas.base import SortOrder
+from uaproject_backend_schemas.models.schemas.user import SearchMode
+from uaproject_backend_schemas.models.user import User
 
 from uap_backend.cruds.base import BaseCRUD
+
+if TYPE_CHECKING:
+    from uaproject_backend_schemas.models.user import (
+        UserFilter,
+        UserSchemaCreate,
+        UserSchemaResponse,
+        UserSchemaUpdate,
+        UserSort,
+    )
+else:
+    UserSchemaCreate = User.schemas.create
+    UserSchemaResponse = User.schemas.response
+    UserSchemaUpdate = User.schemas.update
+    UserFilter = User.filter
+    UserSort = User.sort
 
 __all__ = ["UserCRUDService"]
 
 
-class UserCRUDService(BaseCRUD[UserResponse, UserCreate, UserUpdate, UserFilterParams]):
-    response_model = UserResponse
-
+class UserCRUDService(BaseCRUD[UserSchemaResponse, UserSchemaCreate, UserSchemaUpdate, UserFilter]):
     def __init__(self):
-        super().__init__("/users")
+        super().__init__("/users", "user")
 
-    async def get_by_discord_id(self, user_id: int, **kwargs) -> Optional[UserResponse]:
-        """Get details of a specific user"""
-
-        users = await self.get_list(filters=UserFilterParams(discord_id=user_id), **kwargs)
+    async def get_by_discord_id(self, user_id: int, **kwargs) -> Optional[UserSchemaResponse]:
+        """Get user by Discord ID"""
+        users = await self.get_many(filters=UserFilter(discord_id=user_id), **kwargs)
         return users[0] if users else None
 
-    async def get_by_nickname(self, nickname: str, **kwargs) -> Optional[UserResponse]:
-        """Get details of a specific user"""
-
-        users = await self.get_list(filter=UserFilterParams(minecraft_nickname=nickname), **kwargs)
+    async def get_by_nickname(self, nickname: str, **kwargs) -> Optional[UserSchemaResponse]:
+        """Get user by Minecraft nickname"""
+        users = await self.get_many(filters=UserFilter(minecraft_nickname=nickname), **kwargs)
         return users[0] if users else None
 
     async def search_by_nickname(
@@ -41,9 +46,11 @@ class UserCRUDService(BaseCRUD[UserResponse, UserCreate, UserUpdate, UserFilterP
         limit: int = 10,
         sort_by: UserSort = UserSort.CREATED_AT,
         order: SortOrder = SortOrder.ASC,
-        filters: Optional[UserFilterParams] = None,
+        filters: Optional[UserFilter] = None,
         search_mode: Optional[SearchMode] = None,
+        **kwargs,
     ):
+        """Search users by nickname with advanced options"""
         params = {
             "skip": skip,
             "limit": limit,
@@ -57,8 +64,4 @@ class UserCRUDService(BaseCRUD[UserResponse, UserCreate, UserUpdate, UserFilterP
         elif similar is not None:
             params["similar"] = similar
 
-        return await self.get_list(
-            "/list/search",
-            filters=filters,
-            params=params,
-        )
+        return await self._request("GET", "/list/search", params=params, **kwargs)
